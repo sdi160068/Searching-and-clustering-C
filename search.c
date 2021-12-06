@@ -1,15 +1,10 @@
-#include "hash.h"
-#include "HT.h"
-#include "loading.h"
+#include <assert.h>
+#include "cube.h"
 #include "lsh.h"
-#include <math.h>
-#include "mod.h"
+#include "hash.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/time.h>
-#include "vector.h"
-#include "vector_list.h"
 
 int main(int argc, char* argv[]){
     // C h e c k   f o r   p a r a m e t e r s
@@ -96,7 +91,7 @@ int main(int argc, char* argv[]){
     char algorithm_index;
     if(algorithm != NULL ){
         // check algorithm
-        if (!strcmp(algorithm,"LSH"))      {     algorithm_index = 'L';  }          // LSH
+        if (!strcmp(algorithm,"LSH"))           {     algorithm_index = 'L';  }     // LSH
         else if (!strcmp(algorithm,"Hypercube")){     algorithm_index = 'H';  }     // Hypercube
         else if (!strcmp(algorithm,"Frechet"))  {     algorithm_index = 'F';  }     // Frechet
         else{
@@ -105,16 +100,17 @@ int main(int argc, char* argv[]){
             check = 1;
         }
         free(algorithm);
-        
-        // check metric
-        if(algorithm_index == 'F' && strcmp(metric,"discrete") && strcmp(metric,"continuous")){
-            printf(" - Error! Metric must be 'discrete' or 'continuous'\n"); check = 1;
-        }
         if(algorithm_index == 'H'){
             k=14;
         }
     }
     else{printf(" - Error! You must give an algorithm\n"); check = 1;}
+    if(metric != NULL){
+        // check metric
+        if(algorithm_index == 'F' && strcmp(metric,"discrete") && strcmp(metric,"continuous")){
+            printf(" - Error! Metric must be 'discrete' or 'continuous'\n"); check = 1;
+        }
+    }
 
     if(check){ 
         free(input_file);
@@ -130,26 +126,30 @@ int main(int argc, char* argv[]){
     printf("delta %lf\n",delta);
     printf("probes %d\n",probes);
     printf("metric %s\n",metric);
-    printf("algorithm   %s\n",algorithm);
+
     printf("input_file  %s\n",input_file);
     printf("output_file %s\n",output_file);
     printf("query_file  %s\n",query_file);
 
-
-    if(algorithm_index == 'L'){
-        if( lsh(k,L,input_file,output_file,query_file));
+    // select algorithm
+    switch (algorithm_index){
+    case 'L':
+        printf("algorithm   LSH\n");
+        lsh(k,L,input_file,output_file,query_file);
+        break;
+    case 'H':
+        printf("algorithm   Hypercube\n");
+        cube(k,M,probes,input_file,output_file,query_file);
+        break;
+    default:
+        break;
     }
 
-
-    // free files
+    // free strings
     free(input_file);
     free(output_file);
     free(query_file);
-    
-    // free strings
-    if(metric != NULL){ free(metric); }
+    free(metric);
 
-    // // close files
-    // fclose(output);
     return 0;
 }

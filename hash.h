@@ -30,4 +30,6 @@ void delete_g(g** ppg);         // delete hash function g
 
 void change_w(long int ww);     // delete
 
+void print_g(g* pg);
+
 #endif

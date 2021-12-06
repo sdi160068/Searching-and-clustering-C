@@ -386,7 +386,7 @@ pList vector_n_nearest_ID(pList pvl,pList nearests,pVector q,long int ID,int N){
     // find and add to list the ID vectors
     while(p0!= NULL && ID != -1){
         if(p0->ID == ID){
-            new_vector_sorted(nearests_new,p0->vector,ID,dist_L2(q,p0->vector));
+            new_vector_sorted(nearests_new,p0->vector,ID,distance('2',q,p0->vector));
             if(size_of_list(nearests_new) > N)
                         delete_first_lnode(nearests_new);
             count_ID++;
@@ -400,7 +400,7 @@ pList vector_n_nearest_ID(pList pvl,pList nearests,pVector q,long int ID,int N){
         worse_dist = INFINITY;
         while( p0 != NULL){
             if( p0->ID != ID || ID < 0){
-                double dist_qp = dist_L2(q,p0->vector);
+                double dist_qp = distance('2',q,p0->vector);
                 if( dist_qp < worse_dist || size_of_list(nearests_new) < N){
                     new_vector_sorted(nearests_new,p0->vector,p0->ID,dist_qp);
                     if(size_of_list(nearests_new) > N)
@@ -434,7 +434,7 @@ pList vector_n_nearest_max(pList pvl,pList nearests,pVector q,double M,int N,int
     long int count_items = 0;
     p0 = pvl->first;
     while( p0 != NULL && count_items < MAX){
-        double dist_qp = dist_L2(q,p0->vector);
+        double dist_qp = distance('2',q,p0->vector);
         if( dist_qp < worse_dist || size_of_list(nearests_new) < N){
             new_vector_sorted(nearests_new,p0->vector,p0->ID,dist_qp);
             if(size_of_list(nearests_new) > N)
@@ -464,7 +464,7 @@ long int vector_nearest_number(pList pvl,pVector q){
     long int i = 0;
     double dist, dist_min = INFINITY;
     for(pLnode p0 = pvl->first; p0 != NULL; p0 = p0->next){
-        dist = dist_L2(p0->vector,q);
+        dist = distance('2',p0->vector,q);
         if( dist_min > dist){
             dist_min = dist;
             index = i;
@@ -490,7 +490,7 @@ pList vector_range_search(pList pvl,pList range_search_list,pVector p0,double M,
     long int count = 0;
     while( plv_node != NULL && count < MAX){     // search only MAX vectors
         pVector pv = plv_node->vector;
-        double dist = dist_L2(p0,pv);
+        double dist = distance('2',p0,pv);
         if(  dist <= R )
             new_vector_sorted(range_search_list,pv,-1,dist);    // we dont care about ID, so ID = -1
         plv_node = plv_node->next;
@@ -521,13 +521,13 @@ pList vector_range_search_cluster(pList pvl,pList range_search_list,pVector* cen
                     if the distance of vector from the new cluster (clusrter)
                      is better than vector's cluster (vectors_cluster), do vector->cluster = cluster
                 */
-                if(dist_L2(p0,centroids[cluster]) < dist_L2(p0,centroids[vectors_cluster])){
+                if(distance('2',p0,centroids[cluster]) < distance('2',p0,centroids[vectors_cluster])){
                     vector_set_cluster(p0,cluster);
                 }
             }
         }
         else{
-            double dist = dist_L2(p0,plv_node->vector);
+            double dist = distance('2',p0,plv_node->vector);
             if(  dist <= R ){
                 new_vector_sorted(range_search_list,plv_node->vector,-1,dist);    // we dont care about ID, so ID = -1
                 vector_set_cluster(plv_node->vector,cluster);
@@ -544,7 +544,7 @@ double silhouette(pList* items_clusters,pVector pi,long int cluster,pList cluste
     double average_a = 0.0;
     double num = 0.0;
     for(pLnode p0 = items_clusters[cluster]->first; p0 != NULL; p0 = p0->next){
-        average_a += dist_L2(p0->vector,pi);
+        average_a += distance('2',p0->vector,pi);
         num += 1.0;
     }
     if( num != 0.0)
@@ -554,7 +554,7 @@ double silhouette(pList* items_clusters,pVector pi,long int cluster,pList cluste
     long int i=0;
     for(pLnode p0 = items_clusters[cluster]->first; p0 != NULL; p0 = p0->next){
         if( vector_cluster(p0->vector) != cluster){
-            double new_dist = dist_L2(p0->vector,pi);
+            double new_dist = distance('2',p0->vector,pi);
             if( new_dist < dist){
                 dist = new_dist;
                 new_index = i;
@@ -565,7 +565,7 @@ double silhouette(pList* items_clusters,pVector pi,long int cluster,pList cluste
     num = 0.0;
     double average_b = 0.0;
     for(pLnode p0 = items_clusters[new_index]->first; p0 != NULL; p0 = p0->next){
-        average_b += dist_L2(p0->vector,pi);
+        average_b += distance('2',p0->vector,pi);
         num += 1.0;
     }
     if( num != 0.0)

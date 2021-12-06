@@ -99,7 +99,7 @@ pList k_means_pp(pList pvl,int num_clusters){
             vector_next_init(pvl);
             int i=0;
             for(p0 = vector_next(pvl); p0 != NULL; p0 = vector_next(pvl)){
-                dist = dist_L2(p0,centroid);
+                dist = distance('2',p0,centroid);
                 if(distances[i] > dist)
                     distances[i] = sqrt(dist);
                 sum += distances[i];

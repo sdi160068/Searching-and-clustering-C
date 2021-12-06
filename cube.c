@@ -1,3 +1,4 @@
+#include "cube.h"
 #include "hash.h"
 #include "HT.h"
 #include "loading.h"
@@ -12,88 +13,10 @@
 
 long int hamming_distance(long int x,long int y);
 pList cube_n_nearests(pHT hash_table,f* f_function,pVector q,int probes,int M,int N);
-pList cube_range_search(pHT hash_table,f* f_function,pVector q,int probes,int M,double R);
-void cube_fprintf(FILE* output,pList nn_list,pList nn_brute_list,pList rs_list,pVector q,double cube_timer,double true_timer,double R);
+void cube_fprintf(FILE* output,pList nn_list,pList nn_brute_list,pVector q,double cube_timer,double true_timer);
 
-int main(int argc, char* argv[]){
-    // C h e c k   f o r   p a r a m e t e r s
-    
-    // Parameters with default values
-    int k = 14;     // d'
-    int M = 10;
-    int probes = 2;
-    int N = 1;
-    double R = 10000.0;
-
-    // Parameters must have values
-    char* input_file  = NULL;
-    char* query_file  = NULL;
-    char* output_file = NULL;
-
-    int i=0;
-    while(i < argc){
-        if(*argv[i] == '-'){
-            if(argv[i][1] == 'k' && (i+1) < argc){           // k
-                k = atoi(argv[i+1]);
-                i++;
-            }
-            else if(strcmp(argv[i],"-probes")==0 && (i+1) < argc){       // probes
-                probes = atoi(argv[i+1]);
-                i++;
-            }
-            else if(argv[i][1] == 'M' && (i+1) < argc){       // M
-                M = atoi(argv[i+1]);
-                i++;
-            }
-            else if(argv[i][1] == 'N' && (i+1) < argc){       // N
-                N = atoi(argv[i+1]);
-                i++;
-            }
-            else if(argv[i][1] == 'R' && (i+1) < argc){       // R
-                R = atof(argv[i+1]);
-                i++;
-            }
-            else if(argv[i][1] == 'w' && (i+1) < argc){       // w
-                change_w(atoi(argv[i+1]));
-                i++;
-            }
-            else if(argv[i][1] == 'i' && (i+1) < argc){       // input file
-                input_file = malloc(sizeof(char)*(strlen(argv[i+1])+1));
-                strcpy(input_file,argv[i+1]);
-                i++;
-            }
-            else if(argv[i][1] == 'q' && (i+1) < argc){       // query file
-                query_file = malloc(sizeof(char)*(strlen(argv[i+1])+1));
-                strcpy(query_file,argv[i+1]);
-                i++;
-            }
-            else if(argv[i][1] == 'o' && (i+1) < argc){       // output file
-                output_file = malloc(sizeof(char)*(strlen(argv[i+1])+1));
-                strcpy(output_file,argv[i+1]);
-                i++;
-            }
-        }
-        i++;
-    }
-    FILE* file;
-    int check =0;
-    if(input_file  == NULL){ printf(" - Error! You must give an input  file\n"); check = 1; }
-    else if(!(file = fopen(input_file,"r"))){ printf(" - Error! %s doesn't exist\n",input_file); check = 1; }
-    else { fclose(file); }
-    if(output_file == NULL){ printf(" - Error! You must give an output file\n"); check = 1; }
-    if(query_file  == NULL){ printf(" - Error! You must give a  query  file\n"); check = 1; }
-    else if(!(file = fopen(query_file,"r"))){ printf(" - Error! %s doesn't exist\n",query_file); check = 1; }
-    else { fclose(file); }
-
-    if(check){ 
-        free(input_file);
-        free(output_file);
-        free(query_file);
-        return 1;           // if there are any errors, return 1
-    }
-
-    // C h e c k   f o r   p a r a m e t e r s
-
+// int main(int argc, char* argv[]){
+int cube(int k, int M, int probes,char* input_file ,char* output_file, char* query_file){
     // create list of vectors
     pList pvl = create_list_file(input_file,"Create Vector list from file progress : ");
     printf("List of vectors is ready !\n");
@@ -120,19 +43,26 @@ int main(int argc, char* argv[]){
 
     pList nearest_neighbors;         // cube
     pList nearest_neighbors_brute;   // brute search
-    pList range_search_list;         // range search
     struct timeval start, stop;
     double cube_timer = 0;       // time for cube to complete
     double true_timer = 0;      // time for brute force search to complete
+    double cube_timer_average = 0;
+    double true_timer_average = 0;
 
-    check = 1;
+    // query_file_curr -> stores name of current query_file.
+    char* query_file_curr = malloc(sizeof(char)*(strlen(query_file)+1) );
+    strcpy(query_file_curr,query_file);
+
+    int check = 1;
     while(check){
         // Create Vector List with queries
-        pList queries = create_list_file(query_file,"Create querie's list from file progress : ");
+        pList queries = create_list_file(query_file_curr,"Create querie's list from file progress : ");
 
         // check if queries list has the same number of dimensions with input list
         if(dimensions_of_list(queries) != dimensions_of_list(pvl)){
-            printf("- Error! Query list from %s has different number of dimensions than input list !\n",query_file);
+            printf("- Error! Query list from %s has different number of dimensions than input list !\n",query_file_curr);
+            fclose(output);
+            return 1;
         }
         else{
             // find nearest neighbors and range search
@@ -143,26 +73,25 @@ int main(int argc, char* argv[]){
             while( query_vector != NULL){
                 // find nearests neighbors via cube and calculate time to complete
                 gettimeofday(&start, NULL);
-                nearest_neighbors = cube_n_nearests(hash_table,f_function,query_vector,probes,M,N);
+                nearest_neighbors = cube_n_nearests(hash_table,f_function,query_vector,probes,M,1);
                 gettimeofday(&stop, NULL);
                 cube_timer = (double)(stop.tv_usec - start.tv_usec) / 1000000 + (double)(stop.tv_sec - start.tv_sec);
+                cube_timer_average += cube_timer;
 
                 // find nearests neighbors via brute force and calculate time to complete
                 gettimeofday(&start, NULL);
-                nearest_neighbors_brute = vector_n_nearest(pvl,query_vector,N);
+                nearest_neighbors_brute = vector_n_nearest(pvl,query_vector,1);
                 gettimeofday(&stop, NULL);
                 true_timer = (double)(stop.tv_usec - start.tv_usec) / 1000000 + (double)(stop.tv_sec - start.tv_sec);
-
-                // range search
-                range_search_list =  cube_range_search(hash_table,f_function,query_vector,probes,M,R*R);
+                true_timer_average += true_timer;
             
-                cube_fprintf(output,nearest_neighbors,nearest_neighbors_brute,range_search_list,query_vector,cube_timer,true_timer,R);
+                // write results for each query to output file
+                cube_fprintf(output,nearest_neighbors,nearest_neighbors_brute,query_vector,cube_timer,true_timer);
 
 
                 // delete lists of vectors for vector query_vector
                 delete_list_no_vectors(&nearest_neighbors);
                 delete_list_no_vectors(&nearest_neighbors_brute);
-                delete_list_no_vectors(&range_search_list);
 
                 // take next vector from list
                 query_vector = vector_next(queries);                // get next query
@@ -170,12 +99,18 @@ int main(int argc, char* argv[]){
 
             }
             end_loading();
+
+            // calculate average time to complete lsh and brute force search and write the results to output file
+            cube_timer_average = cube_timer_average/size_of_list(queries);
+            true_timer_average = true_timer_average/size_of_list(queries);
+            fprintf(output,"tApproximateAverage: %lf\n",cube_timer_average);
+            fprintf(output,"tTrueAverage: %lf\n",true_timer_average);
         }
 
         // free queries list
         delete_list(&queries);
-        // free query_file
-        free(query_file);
+        // free query_file_curr
+        free(query_file_curr);
 
         // end loop
         // check = 0;
@@ -188,10 +123,10 @@ int main(int argc, char* argv[]){
                 char* text = data_getWord(p0,0);
                 if( strcmp(text,"exit")==0 ){ check_loop = 0; check = 0; }
                 else{
-                    query_file = malloc(sizeof(char)*(strlen(text)+1));
-                    strcpy(query_file,text);
-                    FILE* fp = fopen(query_file,"r");
-                    if( fp == NULL) { printf("%s doesn't exist !\n",query_file); free(query_file);}
+                    query_file_curr = malloc(sizeof(char)*(strlen(text)+1));
+                    strcpy(query_file_curr,text);
+                    FILE* fp = fopen(query_file_curr,"r");
+                    if( fp == NULL) { printf("%s doesn't exist !\n",query_file_curr); free(query_file_curr);}
                     else            { fclose(fp); check_loop=0; }
                 }
             }
@@ -204,15 +139,10 @@ int main(int argc, char* argv[]){
     delete_f(&f_function);
     delete_list(&pvl);
 
-    // free files
-    free(input_file);
-    free(output_file);
-
     //close output
     fclose(output);
     return 0;
 }
-
 
 pList cube_n_nearests(pHT hash_table,f* f_function,pVector q,int probes,int M,int N){
     if(hash_table == NULL || f_function == NULL || q == NULL){ return NULL;}
@@ -242,37 +172,9 @@ pList cube_n_nearests(pHT hash_table,f* f_function,pVector q,int probes,int M,in
     return best_N;
 }
 
-pList cube_range_search(pHT hash_table,f* f_function,pVector q,int probes,int M,double R){
-   if(hash_table == NULL || f_function == NULL || q == NULL){ return NULL;}
-    long int index = hash_f(f_function,q);
-    int new_M = M;
-    long int new_index = index;
-    int num_of_retrieved_items = 0;
-    long int i=0;
-    int ham_dist = 1;
-    pList bucket, range_search_list = NULL;
-    for(int j=0; j<probes && new_M != 0; j++){
-        bucket = HT_bucket(hash_table,new_index);
-        range_search_list = vector_range_search(bucket,range_search_list,q,(double) M,R,&num_of_retrieved_items);
-        for( ; i < size_HT(hash_table); i++){
-            if(hamming_distance(index,i) == ham_dist){
-                new_index = i;
-                i++;
-                break;
-            }
-        }
-        if(i >= size_HT(hash_table)){
-            i=0;
-            ham_dist++;
-        }
-        new_M -= num_of_retrieved_items;
-    }
-    return range_search_list;
-}
-
-void cube_fprintf(FILE* output,pList nn_list,pList nn_brute_list,pList rs_list,pVector q,double cube_timer,double true_timer,double R){
-    if(output == NULL || nn_list == NULL || nn_brute_list == NULL || rs_list == NULL || q == NULL){
-        printf("- Error! output,nn_list, nn_brute_list,rs_list or q are NULL !\n");
+void cube_fprintf(FILE* output,pList nn_list,pList nn_brute_list,pVector q,double cube_timer,double true_timer){
+    if(output == NULL || nn_list == NULL || nn_brute_list == NULL || q == NULL){
+        printf("- Error! output,nn_list, nn_brute_list or q are NULL !\n");
         return;
     }
     // list first -> N neighbor  , so with a reversed list, first-> 1 neighbor 
@@ -285,30 +187,24 @@ void cube_fprintf(FILE* output,pList nn_list,pList nn_brute_list,pList rs_list,p
     pVector tmp1 = vector_next(nn_list);
     pVector tmp2 = vector_next(nn_brute_list);
     fprintf(output,"Query: %s\n",vector_id(q));
+    fprintf(output,"Algorithm: Hypercube\n");
     
     // write Nearests neighbors and distances
     int neighbor_number = 1 ;
 
     while( tmp1 != NULL && tmp2 != NULL){
-        fprintf(output,"Nearest neighbor-%d: %s\n",neighbor_number,vector_id(tmp1));
-        fprintf(output,"distancecube: %lf\n",sqrt( dist_L2(q,tmp1) ) );
-        fprintf(output,"distanceTrue: %lf\n",sqrt( dist_L2(q,tmp2) ) );
+        fprintf(output,"Approximate Nearest neighbor: %s\n",vector_id(tmp1));
+        fprintf(output,"True Nearest neighbor: %s\n",vector_id(tmp2));
+        fprintf(output,"distanceApproximate: %lf\n",sqrt( distance('2',q,tmp1) ) );
+        fprintf(output,"distanceTrue: %lf\n",sqrt( distance('2',q,tmp2) ) );
         tmp1 = vector_next(nn_list);
         tmp2 = vector_next(nn_brute_list);
         neighbor_number++;
     }
 
     // write times 
-    fprintf(output,"\ntcube: %lf\n",cube_timer);
+    fprintf(output,"\ntApproximate: %lf\n",cube_timer);
     fprintf(output,"tTrue: %lf\n\n",true_timer);
-
-    // write vector's id of range search list
-    vector_next_init(rs_list);
-    fprintf(output,"%lf-near neighbors:\n",R);
-    while( (tmp1 = vector_next(rs_list)) != NULL){
-        fprintf(output,"%s\n",vector_id(tmp1));
-    }
-    fprintf(output,"\n");
 }
 
 long int hamming_distance(long int x,long int y){

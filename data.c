@@ -105,12 +105,12 @@ char* read_line(FILE* filename,int* check){    // returns a word from an file wi
     c = fgetc(filename);
     if(c==EOF){ return NULL; }
     int i=0;
-    while(c==' ' || c=='\r'){ c = fgetc(filename); }
+    while(c==' ' || c== '\t' || c=='\r'){ c = fgetc(filename); }
 
     if(c == '\n'){ (*check)=0; return NULL;}
     
     str = malloc(len*sizeof(char));
-    while(c!=EOF && c!='\n' && c!=' ' && c!='\r'){
+    while(c!=EOF && c!='\n' && c!=' ' && c!='\r' && c!= '\t'){
         str[i] = c;
         i++;
         c = fgetc(filename);

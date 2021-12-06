@@ -96,6 +96,7 @@ int f_return_bit(f* pf,int index,int h){
 
 g* init_g(int k,int dim){             // initialize hash function g_i
     static int check = 1;
+    
     if(check){ printf("w is %d\n",w); check = 0;}
     if( dim < 1){ return NULL; }
     g* p0 = malloc(sizeof(g));
@@ -177,4 +178,12 @@ unsigned long int hash_ID(g* pg,pVector p){
 
 void change_w(long int ww){     // delete
     w = ww; 
+}
+
+void print_g(g* pg){
+    if(pg == NULL){
+        printf("- Error! g* is NULL !!\n"); return;
+    }
+    printf("g-hash\n");
+    printf("- %d\n\n",pg->k);
 }

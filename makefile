@@ -1,6 +1,6 @@
 CC=gcc
 CFLAGS=-Wall
-OBJECTS = data.o vector_list.o vector.o random.o HT.o hash.o mod.o loading.o lsh.o
+OBJECTS = data.o vector_list.o vector.o random.o HT.o hash.o mod.o loading.o lsh.o cube.o
 MAIN = main.o
 MAIN2 = main2.o
 MAIN3 = main3.o
@@ -81,4 +81,4 @@ search.o   			: search.c
 .PHONY: clean
 
 clean:
-	rm -f $(OBJECTS) main3 main2 main lsh cube cluster search main3.o main2.o main.o lsh.o cube.o cluster.o search.o
+	rm -f $(OBJECTS) main3 main2 main lsh cube cluster search main3.o main2.o main.o lsh.o cube.o cluster.o cluster_main.o search.o
