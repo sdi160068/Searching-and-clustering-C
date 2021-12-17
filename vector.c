@@ -125,20 +125,16 @@ void print_vector_coords(pVector p0){
 
 }
 
-double distance(char metric,pVector p0, pVector p1){     // distance of vectors via a metric
+double dist_L2(pVector p0, pVector p1){     // distance^2
     if(p0 == NULL || p1 == NULL){ printf(" - Error! p0 or p1 are NULL !\n"); return EOF; }
+    else if(p0->dim != p1->dim){  printf(" - Error! p0->dim=%d and p1->dim=%d ! Different dimensions\n",p0->dim,p1->dim); return EOF; }
+    else if( p0 == p1 ){ return 0.0;}
     double dist = 0;
-    switch (metric){
-        case '2':       // euclidean distance (L2)
-            if(p0->dim != p1->dim){  printf(" - Error! p0->dim=%d and p1->dim=%d ! Different dimensions\n",p0->dim,p1->dim); return EOF; }
-            else if( p0 == p1 ){ return 0.0;}
-            for(int i=0; i<p0->dim; i++){
-                dist += pow(p0->coords[i]-p1->coords[i],2.0); // (x-y)^2
-            }
-            break;
-        default:
-            dist = -1.0;
-            break;
+    for(int i=0; i<p0->dim; i++){
+        dist += pow(p0->coords[i]-p1->coords[i],2.0); // (x-y)^2
     }
     return dist;
 }
+
+
+

@@ -25,6 +25,6 @@ void print_vector(pVector p0); // prints "node of list with id" if the node exis
 void fprint_vector(pVector p0,FILE* fp);
 void print_vector_coords(pVector p0);
 
-double distance(char metric,pVector p0, pVector p1);     // distance of vectors via a metric
+double dist_L2(pVector p0, pVector p1);     // distance^2
 
 #endif

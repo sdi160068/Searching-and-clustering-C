@@ -1,6 +1,6 @@
 CC=gcc
 CFLAGS=-Wall
-OBJECTS = data.o vector_list.o vector.o random.o HT.o hash.o mod.o loading.o lsh.o cube.o
+OBJECTS = data.o vector_list.o vector.o random.o HT.o hash.o mod.o loading.o lsh.o cube.o stack.o math_custom.o curve.o
 MAIN = main.o
 MAIN2 = main2.o
 MAIN3 = main3.o
@@ -39,6 +39,9 @@ data.o   		: data.c
 vector_list.o	: vector_list.c
 	$(CC) $(CFLAGS) -c vector_list.c -o vector_list.o
 
+stack.o			: stack.c
+	$(CC) $(CFLAGS) -c stack.c -o stack.o
+
 vector.o		: vector.c
 	$(CC) $(CFLAGS) -c vector.c -o vector.o -lm
 
@@ -56,6 +59,12 @@ mod.o   		: mod.c
 
 loading.o 	: loading.c
 	$(CC) $(CFLAGS) -c loading.c -o loading.o
+
+math_custom.o	: math_custom.c
+	$(CC) $(CFLAGS) -c math_custom.c -o math_custom.o
+
+curve.o			: curve.c
+	$(CC) $(CFLAGS) -c curve.c -o curve.o
 
 main.o   		: main.c
 	$(CC) $(CFLAGS) -c main.c -o main.o
@@ -81,4 +90,5 @@ search.o   			: search.c
 .PHONY: clean
 
 clean:
-	rm -f $(OBJECTS) main3 main2 main lsh cube cluster search main3.o main2.o main.o lsh.o cube.o cluster.o cluster_main.o search.o
+	rm -f $(OBJECTS) main3 main2 main lsh cube cluster search \
+	main3.o main2.o main.o lsh.o cube.o cluster.o cluster_main.o search.o stack.o math_custom.o curve.o

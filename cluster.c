@@ -72,12 +72,11 @@ pList k_means_pp(pList pvl,int num_clusters){
     pList C_list = create_list(dimensions_of_list(pvl));     // initialize list of centroids
 
     // find random first centroid
-    int index = random_int(0,size_of_list(pvl)-1);
-    vector_next_init(pvl);
-    pVector centroid = vector_next(pvl);
-    for(int i=0; i< index; i++)
-        centroid = vector_next(pvl);
-    centroid = vector_copy(centroid);
+    int index = random_int(0,size_of_list(pvl)-1);  // pick random index 
+
+    pVector centroid = search_vector_by_index(pvl,index);   // find vector by index inside list
+
+    centroid = vector_copy(centroid); 
     new_vector(C_list,centroid,-1);
     
     pVector p0;
@@ -99,7 +98,7 @@ pList k_means_pp(pList pvl,int num_clusters){
             vector_next_init(pvl);
             int i=0;
             for(p0 = vector_next(pvl); p0 != NULL; p0 = vector_next(pvl)){
-                dist = distance('2',p0,centroid);
+                dist = dist_L2(p0,centroid);
                 if(distances[i] > dist)
                     distances[i] = sqrt(dist);
                 sum += distances[i];
@@ -304,5 +303,17 @@ int detect_overflow_plus(double a, double b,double* result){
 
     return 1;
 }
+
+int update_centroids_cluster(pVector* centroids,pList* cluster_list,long int size){
+    if(centroids == NULL || cluster_list == NULL || size < 1){
+        printf("Error (update_centroids_cluster)! centroids are NULL or cluster_list are NULL or size < 1 !\n");
+        return 1;
+    }
+    for(int i=0; i<size; i++){
+        assert(!update_centroid_vector(cluster_list[i],centroids[i],i));
+    }
+    return 0;
+}
+
 
 // https://rosettacode.org/wiki/K-means%2B%2B_clustering

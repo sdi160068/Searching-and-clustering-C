@@ -203,8 +203,8 @@ void lsh_fprintf(FILE* output,pList nn_list,pList nn_brute_list,pVector q,double
     while( tmp1 != NULL && tmp2 != NULL){
         fprintf(output,"Approximate Nearest neighbor: %s\n",vector_id(tmp1));
         fprintf(output,"True Nearest neighbor: %s\n",vector_id(tmp2));
-        fprintf(output,"distanceApproximate: %lf\n",sqrt( distance('2',q,tmp1) ) );
-        fprintf(output,"distanceTrue: %lf\n",sqrt( distance('2',q,tmp2) ) );
+        fprintf(output,"distanceApproximate: %lf\n",sqrt( dist_L2(q,tmp1) ) );
+        fprintf(output,"distanceTrue: %lf\n",sqrt( dist_L2(q,tmp2) ) );
         tmp1 = vector_next(nn_list);
         tmp2 = vector_next(nn_brute_list);
         neighbor_number++;
@@ -214,4 +214,20 @@ void lsh_fprintf(FILE* output,pList nn_list,pList nn_brute_list,pVector q,double
     fprintf(output,"\ntApproximate: %lf\n",lsh_timer);
     fprintf(output,"tTrue: %lf\n\n",true_timer);
     fprintf(output,"\n");
+}
+
+pList lsh_clusters_range_search(pVector* centroids,long int centroid_id, pHT* hash_tables,g** g_functions,long int table_size,int L,double R){
+    if(hash_tables == NULL || g_functions == NULL || centroids == NULL){ return NULL; }
+    pList range_search_list = NULL;
+    long int ID ,index;
+    pList bucket;
+    for(int l=0; l<L; l++){
+        ID = hash_ID(g_functions[l],centroids);
+        index = mod(ID,table_size);     // g(p) = ID(p) mod table_size
+        bucket = HT_bucket(hash_tables[l],index);
+        int num;
+        // range_search_list = vector_range_search(bucket,range_search_list,q,INFINITY,R,&num);
+        // range_search_list = vector_range_search_cluster(range_search_list,)
+    }
+    return range_search_list;
 }

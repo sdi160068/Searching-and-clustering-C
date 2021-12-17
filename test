@@ -1,0 +1,27 @@
+[v0 , v1, v2 , v3 ,v4 , v5 ]
+
+v0 -> v1 
+v1 -> == v2 
+v1 -> v3 
+v3
+
+float tmp_x = v0;
+float tmp_y = v1;
+
+int counter =2;
+copy to v0,v1 sto neo array
+
+for( int i=2; i< d; i+=2){
+    if( tmp_x == vi && tmp_y == vi+1)
+       continue
+    
+    copy to vi,vi+1 sto neo array
+    tmp_x = vi
+    tmp_y = vi+1
+    counter+=2;
+}
+
+if( counter < d){
+    for(int i= counter; i<d; i++)
+        copy to padding_number
+}
