@@ -1,6 +1,6 @@
 CC=gcc
 CFLAGS=-Wall
-OBJECTS = data.o vector_list.o vector.o random.o HT.o hash.o mod.o loading.o lsh.o cube.o stack.o math_custom.o curve.o
+OBJECTS = data.o vector_list.o vector.o random.o HT.o hash.o mod.o loading.o lsh.o cube.o stack.o math_custom.o curve.o timer.o
 MAIN = main.o
 MAIN2 = main2.o
 MAIN3 = main3.o
@@ -66,6 +66,9 @@ math_custom.o	: math_custom.c
 curve.o			: curve.c
 	$(CC) $(CFLAGS) -c curve.c -o curve.o
 
+timer.o			: timer.c
+	$(CC) $(CFLAGS) -c timer.c -o timer.o
+
 main.o   		: main.c
 	$(CC) $(CFLAGS) -c main.c -o main.o
 
@@ -91,4 +94,5 @@ search.o   			: search.c
 
 clean:
 	rm -f $(OBJECTS) main3 main2 main lsh cube cluster search \
-	main3.o main2.o main.o lsh.o cube.o cluster.o cluster_main.o search.o stack.o math_custom.o curve.o
+	main3.o main2.o main.o lsh.o cube.o cluster.o cluster_main.o \
+	search.o stack.o math_custom.o curve.o timer.o

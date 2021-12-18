@@ -3,11 +3,14 @@
 
 #include "vector.h"
 
+double* point_curve(pVector c0,int index, double* point);
 
-double* point_curve(pVector c0,int index);
+void print_point(double* p);
+
 int delete_point_curve(double** point);
 
 double dist_discrete_frechet(pVector p0, pVector p1);
+double dist_frechet(pVector p0, pVector p1);
 
 pVector snapping_vector(pVector p0,pVector t,double delta);     // snapping : floor((x-t)/delta + 1/2)*delta +t
 pVector remove_duplicates_vector(pVector p0,int d,double padding_number);     // remove duplicates and add pudding number 
