@@ -9,6 +9,8 @@ pLsh init_lsh(int size,int L, int k, pList pvl);
 
 int delete_lsh(pLsh * lsh_object);
 
+int delete_frechet_lsh(pLsh * plsh0);
+
 int lsh(int k, int L, char* input_file ,char* output_file, char* query_file);
 
 pList lsh_n_nearests(pLsh lsh_object,pVector q,int N);

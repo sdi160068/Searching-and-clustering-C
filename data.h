@@ -38,4 +38,6 @@ char* data_getWord(pData p0,int index);    // returns table[index] . If p0 == NU
 
 long int lines_of_file(char* filename);
 
+char* loop_new_file();                     // use for lsh and cube .Check if file from scan() exist's. If scan() returns exit , return NULL.
+
 #endif

@@ -27,100 +27,193 @@ int delete_point_curve(double** point){
     return 0;
 }
 
-double dist_discrete_frechet(pVector p0, pVector p1){
-    if(p0 == NULL || p1 == NULL){ printf(" - Error! p0 mor p1 are NULL !\n"); return -1.0; }
-    else if( p0 == p1 ){ return 0.0;}
+// double dist_discrete_frechet(pVector p0, pVector p1){
+//     if(p0 == NULL || p1 == NULL){ printf(" - Error! p0 mor p1 are NULL !\n"); return -1.0; }
+//     else if( p0 == p1 ){ return 0.0;}
 
-    int n = vector_dim(p0)/2;  // size of p0 curve
-    int m = vector_dim(p1)/2;  // size of p1 curve
+//     int n = vector_dim(p0)/2;  // size of p0 curve
+//     int m = vector_dim(p1)/2;  // size of p1 curve
 
-    // initialize cost table
-    double c[n][m]; // cost table
-    for(int i=0; i<n; i++){
-        for(int j=0; j<m; j++)
-            c[i][j] = -1.0;
-    }
+//     // initialize cost table
+//     double c[n][m]; // cost table
+//     for(int i=0; i<n; i++){
+//         for(int j=0; j<m; j++)
+//             c[i][j] = -1.0;
+//     }
 
-    // find first points of each curve
-    double point_p0[2];
-    point_curve(p0,0,point_p0);
-    double point_p1[2];
-    point_curve(p1,0,point_p0);
+//     // find first points of each curve
+//     double point_p0[2];
+//     point_curve(p0,0,point_p0);
+//     double point_p1[2];
+//     point_curve(p1,0,point_p0);
 
-    // calculate c(0,0)
-    c[0][0] = norm_2(point_p0, point_p1);
+//     // calculate c(0,0)
+//     c[0][0] = norm_2(point_p0, point_p1);
 
-    // create stacks for c table indexes
-    pStack list_i = create_stack();
-    pStack list_j = create_stack();
+//     // create stacks for c table indexes
+//     pStack list_i = create_stack();
+//     pStack list_j = create_stack();
 
-    // pust to stacks n and m of c table
-    push_stack(list_i,n-1);
-    push_stack(list_j,m-1);
+//     // pust to stacks n and m of c table
+//     push_stack(list_i,n-1);
+//     push_stack(list_j,m-1);
 
-    // discrete frechet iteration
-    int i = n-1,j = m-1;
-    while( !is_empty_stack(list_i) && i> -1 && j > -1){
-        i = pop_stack(list_i);
-        j = pop_stack(list_j);
+//     // discrete frechet iteration
+//     int i = n-1,j = m-1;
+//     while( !is_empty_stack(list_i) && i> -1 && j > -1){double dist_discrete_frechet(pVector p0, pVector p1){
+//     if(p0 == NULL || p1 == NULL){ printf(" - Error! p0 mor p1 are NULL !\n"); return -1.0; }
+//     else if( p0 == p1 ){ return 0.0;}
 
-        if( c[i][j] < 0){
-            if( i == 0 && j > 0){
-                if( c[i][j-1] > 0){
-                    c[i][j] = max( c[i][j-1], norm_2(point_curve(p0,i,point_p0) , point_curve(p1,j,point_p1)));
-                }
-                else{
-                    push_stack(list_i,i);
-                    push_stack(list_j,j);
+//     int n = vector_dim(p0)/2;  // size of p0 curve
+//     int m = vector_dim(p1)/2;  // size of p1 curve
 
-                    push_stack(list_i,i);
-                    push_stack(list_j,j-1);
-                    continue;
-                }
-            }
-            else if( i>0 && j == 0){
-                if( c[i-1][j] > 0){
-                    c[i][j] = max( c[i-1][j], norm_2(point_curve(p0,i,point_p0) , point_curve(p1,j,point_p1)));
-                }
-                else{
-                    push_stack(list_i,i);
-                    push_stack(list_j,j);
+//     // initialize cost table
+//     double c[n][m]; // cost table
+//     for(int i=0; i<n; i++){
+//         for(int j=0; j<m; j++)
+//             c[i][j] = -1.0;
+//     }
 
-                    push_stack(list_i,i-1);
-                    push_stack(list_j,j);
-                    continue;
-                }
-            }
-            else{ // i>0 and j>0
-                if(c[i-1][j] > -1 && c[i-1][j-1] > -1 && c[i][j-1] > -1){
-                    c[i][j] = max( min(c[i][j-1] , min( c[i-1][j],c[i-1][j-1] ) ) , norm_2(point_curve(p0,i,point_p0) , point_curve(p1,j,point_p1)));
-                }
-                else{
+//     // find first points of each curve
+//     double point_p0[2];
+//     point_curve(p0,0,point_p0);
+//     double point_p1[2];
+//     point_curve(p1,0,point_p0);
 
-                    push_stack(list_i,i);
-                    push_stack(list_j,j);
+//     // calculate c(0,0)
+//     c[0][0] = norm_2(point_p0, point_p1);
 
-                    push_stack(list_i,i-1);
-                    push_stack(list_j,j);
+//     // create stacks for c table indexes
+//     pStack list_i = create_stack();
+//     pStack list_j = create_stack();
+
+//     // pust to stacks n and m of c table
+//     push_stack(list_i,n-1);
+//     push_stack(list_j,m-1);
+
+//     // discrete frechet iteration
+//     int i = n-1,j = m-1;
+//     while( !is_empty_stack(list_i) && i> -1 && j > -1){
+//         i = pop_stack(list_i);
+//         j = pop_stack(list_j);
+
+//         if( c[i][j] < 0){
+//             if( i == 0 && j > 0){
+//                 if( c[i][j-1] > 0){
+//                     c[i][j] = max( c[i][j-1], norm_2(point_curve(p0,i,point_p0) , point_curve(p1,j,point_p1)));
+//                 }
+//                 else{
+//                     push_stack(list_i,i);
+//                     push_stack(list_j,j);
+
+//                     push_stack(list_i,i);
+//                     push_stack(list_j,j-1);
+//                     continue;
+//                 }
+//             }
+//             else if( i>0 && j == 0){
+//                 if( c[i-1][j] > 0){
+//                     c[i][j] = max( c[i-1][j], norm_2(point_curve(p0,i,point_p0) , point_curve(p1,j,point_p1)));
+//                 }
+//                 else{
+//                     push_stack(list_i,i);
+//                     push_stack(list_j,j);
+
+//                     push_stack(list_i,i-1);
+//                     push_stack(list_j,j);
+//                     continue;
+//                 }
+//             }
+//             else{ // i>0 and j>0
+//                 if(c[i-1][j] > -1 && c[i-1][j-1] > -1 && c[i][j-1] > -1){
+//                     c[i][j] = max( min(c[i][j-1] , min( c[i-1][j],c[i-1][j-1] ) ) , norm_2(point_curve(p0,i,point_p0) , point_curve(p1,j,point_p1)));
+//                 }
+//                 else{
+
+//                     push_stack(list_i,i);
+//                     push_stack(list_j,j);
+
+//                     push_stack(list_i,i-1);
+//                     push_stack(list_j,j);
                     
-                    push_stack(list_i,i-1);
-                    push_stack(list_j,j-1);
+//                     push_stack(list_i,i-1);
+//                     push_stack(list_j,j-1);
 
-                    push_stack(list_i,i);
-                    push_stack(list_j,j-1);
-                    continue;
-                }
-            }
-        }
-        else{
-            continue;
-        }
-    }
+//                     push_stack(list_i,i);
+//                     push_stack(list_j,j-1);
+//                     continue;
+//                 }
+//             }
+//         }
+//         else{
+//             continue;
+//         }
+//     }
 
-    delete_stack(&list_i);
-    delete_stack(&list_j);
-    return c[n-1][m-1];
-}
+//     delete_stack(&list_i);
+//     delete_stack(&list_j);
+//     return c[n-1][m-1];
+// }
+//         i = pop_stack(list_i);
+//         j = pop_stack(list_j);
+
+//         if( c[i][j] < 0){
+//             if( i == 0 && j > 0){
+//                 if( c[i][j-1] > 0){
+//                     c[i][j] = max( c[i][j-1], norm_2(point_curve(p0,i,point_p0) , point_curve(p1,j,point_p1)));
+//                 }
+//                 else{
+//                     push_stack(list_i,i);
+//                     push_stack(list_j,j);
+
+//                     push_stack(list_i,i);
+//                     push_stack(list_j,j-1);
+//                     continue;
+//                 }
+//             }
+//             else if( i>0 && j == 0){
+//                 if( c[i-1][j] > 0){
+//                     c[i][j] = max( c[i-1][j], norm_2(point_curve(p0,i,point_p0) , point_curve(p1,j,point_p1)));
+//                 }
+//                 else{
+//                     push_stack(list_i,i);
+//                     push_stack(list_j,j);
+
+//                     push_stack(list_i,i-1);
+//                     push_stack(list_j,j);
+//                     continue;
+//                 }
+//             }
+//             else{ // i>0 and j>0
+//                 if(c[i-1][j] > -1 && c[i-1][j-1] > -1 && c[i][j-1] > -1){
+//                     c[i][j] = max( min(c[i][j-1] , min( c[i-1][j],c[i-1][j-1] ) ) , norm_2(point_curve(p0,i,point_p0) , point_curve(p1,j,point_p1)));
+//                 }
+//                 else{
+
+//                     push_stack(list_i,i);
+//                     push_stack(list_j,j);
+
+//                     push_stack(list_i,i-1);
+//                     push_stack(list_j,j);
+                    
+//                     push_stack(list_i,i-1);
+//                     push_stack(list_j,j-1);
+
+//                     push_stack(list_i,i);
+//                     push_stack(list_j,j-1);
+//                     continue;
+//                 }
+//             }
+//         }
+//         else{
+//             continue;
+//         }
+//     }
+
+//     delete_stack(&list_i);
+//     delete_stack(&list_j);
+//     return c[n-1][m-1];
+// }
 
 double dist_frechet(pVector p0, pVector p1){
     int size0 = vector_dim(p0)/2;

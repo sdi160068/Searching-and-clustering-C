@@ -1,3 +1,4 @@
+#include "grid.h"
 #include "hash.h"
 #include "HT.h"
 #include "loading.h"
@@ -34,12 +35,6 @@ pLsh init_lsh(int size,int L, int k, pList pvl){
         plsh0->hash_tables[i] = init_HT(size,dimensions_of_list(pvl));
         plsh0->g_hash[i] = init_g(k,dimensions_of_list(pvl));
     }
-
-    init_loading("Hash table built progress : ", size_of_list(pvl));    // loading : progress for any loop with limit size
-
-    // start read vectors from list
-    vector_next_init(pvl);
-
     // put vectors to hash tables
     for(pVector pv = vector_next(pvl); pv != NULL; pv =  vector_next(pvl)){
         for(int i=0; i<L; i++){
@@ -56,10 +51,58 @@ pLsh init_lsh(int size,int L, int k, pList pvl){
     return plsh0;
 }
 
+pLsh init_by_grids_lsh(int size,int L, int k,pGrid* grids, pList pvl){
+    if(size < 0 || pvl == NULL || grids == NULL){ printf("Error (init_by_grids_lsh )! size < 0 or list == NULL or grids == NULL!\n"); return NULL;}
+    pLsh plsh0 = malloc(sizeof(lsh_obj));
+    plsh0->hash_tables = malloc(sizeof(pHT)*L);
+    plsh0->g_hash = malloc(sizeof(g*)*L);
+    plsh0->size = size;
+    plsh0->L = L;
+
+    // initialize hash tables anf g hash functions
+    for(int i=0; i<L; i++){
+        plsh0->hash_tables[i] = init_HT(size,dimensions_of_list(pvl));
+        plsh0->g_hash[i] = init_g(k,dimensions_of_list(pvl));
+    }
+
+    // declare pudding number
+    double pudding_number = 10000000.0;
+
+    // put vectors to hash tables
+    pVector curve;
+    for(pVector pv = vector_next(pvl); pv != NULL; pv =  vector_next(pvl)){
+        for(int i=0; i<L; i++){
+            curve = lsh_key_grid(pv,grids[i],pudding_number);
+            long int index = hash_g(plsh0->g_hash[i],curve,size);
+            new_HT_element(plsh0->hash_tables[i],pv,hash_ID(plsh0->g_hash[i],curve),index);
+        }
+        pv = vector_next(pvl);
+        loading();
+    }
+    end_loading();
+
+    printf("Hash tables for vectors are ready !\n");
+
+    return plsh0;
+}
+
 int delete_lsh(pLsh * plsh0){
     if( *plsh0 == NULL){ printf("Warning (delete_lsh )! plsh0 is NULL!\n"); return 1;}
     for(int i=0; i< (*plsh0)->L; i++){
         delete_HT(&(*plsh0)->hash_tables[i]);
+        delete_g(&(*plsh0)->g_hash[i]);
+    }
+    free((*plsh0)->hash_tables);
+    free((*plsh0)->g_hash);
+    free(*plsh0);
+    *plsh0 = NULL;
+    return 0;
+}
+
+int delete_frechet_lsh(pLsh * plsh0){
+    if( *plsh0 == NULL){ printf("Warning (delete_lsh )! plsh0 is NULL!\n"); return 1;}
+    for(int i=0; i< (*plsh0)->L; i++){
+        delete_full_HT(&(*plsh0)->hash_tables[i]);
         delete_g(&(*plsh0)->g_hash[i]);
     }
     free((*plsh0)->hash_tables);
@@ -150,26 +193,106 @@ int lsh(int k, int L, char* input_file ,char* output_file, char* query_file){
         // check = 0;
         int check_loop = 1;
         printf("Type a file name or exit.\n");
-        while(check_loop){
-            printf(">>> ");
-            pData p0 = scan_full();
-            if( data_getSize(p0) > 0  ){
-                char* text = data_getWord(p0,0);
-                if( strcmp(text,"exit")==0 ){ check_loop = 0; check = 0; }
-                else{
-                    query_file_curr = malloc(sizeof(char)*(strlen(text)+1));
-                    strcpy(query_file_curr,text);
-                    FILE* fp = fopen(query_file_curr,"r");
-                    if( fp == NULL) { printf("%s doesn't exist !\n",query_file_curr); free(query_file_curr);}
-                    else            { fclose(fp); check_loop=0; }
-                }
-            }
-            free_data(&p0);
-        }
+        query_file_curr = loop_new_file(&check_loop);
+        if(query_file_curr == NULL){ check = 0;}
     }
 
     delete_list(&pvl);
     delete_lsh(&plsh0);
+
+    // close files
+    fclose(output);
+    return 0;
+}
+
+int lsh_discrete_frechet(int k, int L, double delta,char* input_file ,char* output_file, char* query_file){
+    // List with all vectors
+    pList pvl = create_list_file(input_file,"Create Vector list from file progress : ");
+    printf("List of vectors is ready !\n");
+
+    // size of hash tables
+    long int table_size = size_of_list(pvl)/16 ;  // table_size = n/16
+
+    pGrid* grids = init_grids_table(delta, L, dimensions_of_list(pvl) );
+    pLsh plsh0 = init_by_grids_lsh(table_size,L,k,grids,pvl);
+
+    // Open output_file for write
+    FILE* output = fopen(output_file,"w");
+
+    pList nearest_neighbors;         // lsh
+    pList nearest_neighbors_brute;   // brute search
+    double lsh_timer = 0;       // time for lsh to complete
+    double true_timer = 0;      // time for brute force search to complete
+    double lsh_timer_average = 0;
+    double true_timer_average = 0;
+
+    // query_file_curr -> stores name of current query_file.
+    char* query_file_curr = malloc(sizeof(char)*(strlen(query_file)+1) );
+    strcpy(query_file_curr,query_file);
+
+    int check = 1;
+    while(check){
+        // Create Vector List with queries
+        pList queries = create_list_file(query_file_curr,"Create querie's list from file progress : ");
+
+        // check if queries list has the same number of dimensions with input list
+        if(dimensions_of_list(queries) != dimensions_of_list(pvl)){
+            printf("- Error! Query list from %s has different number of dimensions than input list !\n",query_file_curr);
+            fclose(output);
+            return 1;
+        }
+        else{
+            init_loading("Find queries nearests neighbors :",size_of_list(queries));
+
+            // find nearest neighbors
+            vector_next_init(queries);  // initialize queries->temp = NULL
+
+            for(pVector query_vector = vector_next(queries); query_vector != NULL; query_vector = vector_next(queries)){
+                // find approximate nearest neighbor via lsh and calculate time to complete
+                start_timer();
+                nearest_neighbors = lsh_n_nearests(plsh0, query_vector,1);
+                lsh_timer = stop_timer();
+                lsh_timer_average += lsh_timer;
+
+                // find approximate nearest neighbor via brute force and calculate time to complete
+                start_timer();
+                nearest_neighbors_brute = vector_n_nearest(pvl,query_vector,1);
+                true_timer = stop_timer();
+                true_timer_average += true_timer;
+            
+                // write results for each query to output file
+                lsh_fprintf(output,nearest_neighbors,nearest_neighbors_brute,query_vector,lsh_timer,true_timer);
+
+                // delete lists of vectors for vector query_vector
+                delete_list_no_vectors(&nearest_neighbors);
+                delete_list_no_vectors(&nearest_neighbors_brute);
+
+                loading();
+            }
+            end_loading();
+
+            // calculate average time to complete lsh and brute force search and write the results to output file
+            lsh_timer_average = lsh_timer_average/size_of_list(queries);
+            true_timer_average = true_timer_average/size_of_list(queries);
+            fprintf(output,"tApproximateAverage: %lf\n",lsh_timer_average);
+            fprintf(output,"tTrueAverage: %lf\n",true_timer_average);
+        }
+
+        // free queries list
+        delete_list(&queries);
+        // free query_file
+        free(query_file_curr);
+
+        // end loop
+        // check = 0;
+        int check_loop = 1;
+        printf("Type a file name or exit.\n");
+        query_file_curr = loop_new_file(&check_loop);
+        if(query_file_curr == NULL){ check = 0;}
+    }
+
+    delete_list(&pvl);
+    delete_frechet_lsh(&plsh0);
 
     // close files
     fclose(output);

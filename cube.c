@@ -6,8 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/time.h>
-#include <time.h>
+#include "timer.h"
 #include "vector.h"
 #include "vector_list.h"
 
@@ -43,7 +42,6 @@ int cube(int k, int M, int probes,char* input_file ,char* output_file, char* que
 
     pList nearest_neighbors;         // cube
     pList nearest_neighbors_brute;   // brute search
-    struct timeval start, stop;
     double cube_timer = 0;       // time for cube to complete
     double true_timer = 0;      // time for brute force search to complete
     double cube_timer_average = 0;
@@ -72,22 +70,19 @@ int cube(int k, int M, int probes,char* input_file ,char* output_file, char* que
             init_loading("Find queries nearests neighbors :",size_of_list(queries));
             while( query_vector != NULL){
                 // find nearests neighbors via cube and calculate time to complete
-                gettimeofday(&start, NULL);
+                start_timer();
                 nearest_neighbors = cube_n_nearests(hash_table,f_function,query_vector,probes,M,1);
-                gettimeofday(&stop, NULL);
-                cube_timer = (double)(stop.tv_usec - start.tv_usec) / 1000000 + (double)(stop.tv_sec - start.tv_sec);
+                cube_timer = stop_timer();
                 cube_timer_average += cube_timer;
 
                 // find nearests neighbors via brute force and calculate time to complete
-                gettimeofday(&start, NULL);
+                start_timer();
                 nearest_neighbors_brute = vector_n_nearest(pvl,query_vector,1);
-                gettimeofday(&stop, NULL);
-                true_timer = (double)(stop.tv_usec - start.tv_usec) / 1000000 + (double)(stop.tv_sec - start.tv_sec);
+                true_timer = stop_timer();
                 true_timer_average += true_timer;
             
                 // write results for each query to output file
                 cube_fprintf(output,nearest_neighbors,nearest_neighbors_brute,query_vector,cube_timer,true_timer);
-
 
                 // delete lists of vectors for vector query_vector
                 delete_list_no_vectors(&nearest_neighbors);
@@ -116,22 +111,8 @@ int cube(int k, int M, int probes,char* input_file ,char* output_file, char* que
         // check = 0;
         int check_loop = 1;
         printf("Type a file name or exit.\n");
-        while(check_loop){
-            printf(">>> ");
-            pData p0 = scan_full();
-            if( data_getSize(p0) > 0  ){
-                char* text = data_getWord(p0,0);
-                if( strcmp(text,"exit")==0 ){ check_loop = 0; check = 0; }
-                else{
-                    query_file_curr = malloc(sizeof(char)*(strlen(text)+1));
-                    strcpy(query_file_curr,text);
-                    FILE* fp = fopen(query_file_curr,"r");
-                    if( fp == NULL) { printf("%s doesn't exist !\n",query_file_curr); free(query_file_curr);}
-                    else            { fclose(fp); check_loop=0; }
-                }
-            }
-            free_data(&p0);
-        }
+        query_file_curr = loop_new_file(&check_loop);
+        if(query_file_curr == NULL){ check = 0;}
     }
 
     // free memory

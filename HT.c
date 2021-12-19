@@ -84,6 +84,16 @@ void delete_HT(pHT* pp0){   // delete hash table - pointer will point to NULL
     *pp0 = NULL;
 }
 
+void delete_full_HT(pHT* pp0){   // delete hash table - pointer will point to NULL
+    for(long int i = 0; i< (*pp0)->size; i++){
+        delete_list(&(*pp0)->hTable[i]);
+        (*pp0)->hTable[i] = NULL;
+    }
+    free((*pp0)->hTable);
+    free(*pp0);
+    *pp0 = NULL;
+}
+
 long int size_HT(pHT p0){
     if(p0 == NULL){ return -1;}     // returns -1 if hash table doesn't exist
     return p0->size;

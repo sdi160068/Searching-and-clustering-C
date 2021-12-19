@@ -25,6 +25,8 @@ void fprint_HT_lite(pHT p0,long int data_size, FILE* fp);      // print hash tab
 
 void delete_HT(pHT* pp0);
 
+void delete_full_HT(pHT* pp0);   // delete hash table - pointer will point to NULL
+
 long int size_HT(pHT p0);
 
 pList HT_bucket(pHT p0,long int bucket_id);

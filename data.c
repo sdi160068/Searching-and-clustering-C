@@ -265,3 +265,26 @@ long int lines_of_file(char* filename){
     fclose(fp);
     return lines;
 }
+
+
+char* loop_new_file(){
+    int check_loop = 1;
+    char* str;
+    while(check_loop){
+        printf(">>> ");
+        pData p0 = scan_full();
+        if( data_getSize(p0) > 0  ){
+            char* text = data_getWord(p0,0);
+            if( strcmp(text,"exit")==0 ){ check_loop = 0; str = NULL; }
+            else{
+                str = malloc(sizeof(char)*(strlen(text)+1));
+                strcpy(str,text);
+                FILE* fp = fopen(str,"r");
+                if( fp == NULL) { printf("%s doesn't exist !\n",str); free(str);}
+                else            { fclose(fp); check_loop=0; }
+            }
+        }
+        free_data(&p0);
+    }
+    return str;
+}

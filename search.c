@@ -120,25 +120,27 @@ int main(int argc, char* argv[]){
     }  
     
 
-    printf("k %d\n",k);
-    printf("L %d\n",L);
-    printf("M %d\n",M);
-    printf("delta %lf\n",delta);
-    printf("probes %d\n",probes);
-    printf("metric %s\n",metric);
-
-    printf("input_file  %s\n",input_file);
-    printf("output_file %s\n",output_file);
-    printf("query_file  %s\n",query_file);
+    printf("+--------------------------------------------------\n");
+    printf("| k             %d\n",k);
+    printf("| L             %d\n",L);
+    printf("| M             %d\n",M);
+    printf("| delta         %lf\n",delta);
+    printf("| probes        %d\n",probes);
+    printf("| metric        %s\n|\n",metric);
+    printf("| input_file    %s\n",input_file);
+    printf("| output_file   %s\n",output_file);
+    printf("| query_file    %s\n|\n| ",query_file);
 
     // select algorithm
     switch (algorithm_index){
     case 'L':
-        printf("algorithm   LSH\n");
+        printf("algorithm     LSH\n");
+        printf("+--------------------------------------------------\n");
         lsh(k,L,input_file,output_file,query_file);
         break;
     case 'H':
-        printf("algorithm   Hypercube\n");
+        printf("algorithm     Hypercube\n");
+        printf("+--------------------------------------------------\n");
         cube(k,M,probes,input_file,output_file,query_file);
         break;
     default:

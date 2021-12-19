@@ -27,27 +27,8 @@ double normal_generator(){	// normal distribution : μ = 0, σ^2 = 1
 	return result;
 }
 
-double random_double(int num1,int num2){	// returns uniformly random doubles , >= min and < max
-	int base = 10000;
-	int min,max;
-	if(num1 < num2){
-		min = num1;
-		max = num2;
-	}
-	else{
-		min = num2;
-		max = num1;
-	}
-	int n = random_int(0,base*max);
-	return (double)n/(double)base+(double)min;
-} 
-
 int random_int(int num1,int num2){	// returns uniformly random ints , >= min and < max
-	static bool ok = true;
-	if(ok){							// initialize ONLY ONCE the random generator ( srand )
-		srand(time(0));
-		ok = false;
-	}
+	init_random_generator();
 	int min,max;
 	if(num1 < num2){
 		min = num1;
@@ -58,6 +39,32 @@ int random_int(int num1,int num2){	// returns uniformly random ints , >= min and
 		max = num1;
 	}
 	return rand()%(max+1) + min;
+}
+
+double random_double(double num1, double num2){
+	init_random_generator();
+	double min,max;
+	if(num1 < num2){
+		min = num1;
+		max = num2;
+	}
+	else{
+		min = num2;
+		max = num1;
+	}
+	double range = (max - min); 
+    double div = RAND_MAX / range;
+    return min + (rand() / div);
+}
+
+// https://stackoverflow.com/questions/33058848/generate-a-random-double-between-1-and-1/33059025
+
+void init_random_generator(){
+	static bool ok = true;
+	if(ok){							// initialize ONLY ONCE the random generator ( srand )
+		srand(time(0));
+		ok = false;
+	}
 }
 
 /*
