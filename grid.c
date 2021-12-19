@@ -1,8 +1,8 @@
-#include "curve.h"
 #include "grid.h"
 #include "random.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include "vector.h"
 
 typedef struct grid{
     double delta;
@@ -51,8 +51,8 @@ void delete_grid(pGrid* pp0){
 
 pVector lsh_key_grid(pVector curve, pGrid pg, double pudding_number){
     if( curve == NULL || pg == NULL){ printf("Error (edit_curve_grid)! Return NULL");return NULL;}
-    pVector snap = snapping_vector(curve,pg->t,pg->delta);
-    pVector new_curve = remove_duplicates_vector(snap,2,pudding_number);
+    pVector snap = snapping_curve(curve,pg->t,pg->delta);
+    pVector new_curve = remove_duplicates_curve(snap,2,pudding_number);
     delete_vector(&snap);
     return new_curve;
 }

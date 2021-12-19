@@ -125,7 +125,7 @@ pList k_means_pp(pList pvl,int num_clusters){
     return C_list;
 }
 
-int cluster_Lloyd_method(pList pvl,pList centroids,int max_times,int complete,char* output){
+int cluster_Lloyd_method(pList pvl,pList centroids,int max_times,int complete,char* output,dist_type metric){
     if(pvl == NULL || centroids == NULL){ printf("- Error! List of data or/and list of centroids are NULL !\n"); return 1;}
     struct timeval start, stop;
 
@@ -166,7 +166,7 @@ int cluster_Lloyd_method(pList pvl,pList centroids,int max_times,int complete,ch
         int vector_index = 0;
         vector_next_init(pvl);
         for(pVector p0 = vector_next(pvl); p0 != NULL; p0 = vector_next(pvl)){
-            long int index = vector_nearest_number(centroids,p0);
+            long int index = vector_nearest_number(centroids,p0,metric);
             if( cluster_index[vector_index] != index){
                 changes++;
                 cluster_index[vector_index] = index;

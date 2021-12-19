@@ -13,7 +13,7 @@ int delete_frechet_lsh(pLsh * plsh0);
 
 int lsh(int k, int L, char* input_file ,char* output_file, char* query_file);
 
-pList lsh_n_nearests(pLsh lsh_object,pVector q,int N);
+pList lsh_n_nearests(pLsh plsh0,pVector q,int N,dist_type metric);
 
 void  lsh_fprintf(FILE* output,pList nn_list,pList nn_brute_list,pVector q,double cube_timer,double true_timer);
 

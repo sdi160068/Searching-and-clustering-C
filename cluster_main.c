@@ -110,7 +110,7 @@ int main(int argc, char* argv[]){
 
     switch (method_number){
         case 1:
-            assert(!cluster_Lloyd_method(pvl,centroids,max_times,complete,output_file));    // fix centroids with Lloyd for at least max_times
+            assert(!cluster_Lloyd_method(pvl,centroids,max_times,complete,output_file,L2));    // fix centroids with Lloyd for at least max_times
             break;
     }
 

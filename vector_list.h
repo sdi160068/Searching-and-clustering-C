@@ -40,15 +40,15 @@ void print_list_full(pList pvl);
 
 void lnode_set_dist(pLnode p0,double dist);
 
-pList vector_n_nearest_ID(pList pvl,pList nearests,pVector q,long int ID,int N);
-pList vector_n_nearest_max(pList pvl,pList nearests,pVector q,double M,int N,int *num_retrieved_items);
-pList vector_n_nearest(pList pvl,pVector q,int N);
-long int vector_nearest_number(pList pvl,pVector q);
+pList vector_n_nearest_ID(pList pvl,pList nearests,pVector q,long int ID,int N,dist_type metric);
+pList vector_n_nearest_max(pList pvl,pList nearests,pVector q,double M,int N,int *num_retrieved_items,dist_type metric);
+pList vector_n_nearest(pList pvl,pVector q,int N,dist_type metric);
+long int vector_nearest_number(pList pvl,pVector q,dist_type metric);
 
-pList vector_range_search(pList pvl,pList range_search_list,pVector p0,double M,double R,int *num_retrieved_items);
+pList vector_range_search(pList pvl,pList range_search_list,pVector p0,double M,double R,int *num_retrieved_items,dist_type metric);
 
 /* use ONLY for cluster!! p0 is the searching cluster */
-pList vector_range_search_cluster(pList pvl,pList range_search_list,pVector* centroids,double M,double R,long int cluster_id,int *num_retrieved_items);
+pList vector_range_search_cluster(pList pvl,pList range_search_list,pVector* centroids,double M,double R,long int cluster_id,int *num_retrieved_items,dist_type metric);
 void vector_next_init(pList pvl);    // initialize temp to point to list->first 
 pVector vector_next(pList pvl);  // returns the first vector of list and, in every call, return the next vector
 

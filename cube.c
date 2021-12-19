@@ -77,7 +77,7 @@ int cube(int k, int M, int probes,char* input_file ,char* output_file, char* que
 
                 // find nearests neighbors via brute force and calculate time to complete
                 start_timer();
-                nearest_neighbors_brute = vector_n_nearest(pvl,query_vector,1);
+                nearest_neighbors_brute = vector_n_nearest(pvl,query_vector,1,L2);
                 true_timer = stop_timer();
                 true_timer_average += true_timer;
             
@@ -136,7 +136,7 @@ pList cube_n_nearests(pHT hash_table,f* f_function,pVector q,int probes,int M,in
     pList bucket, best_N = NULL;
     for(int j=0; j<probes && new_M != 0; j++){
         bucket = HT_bucket(hash_table,new_index);
-        best_N = vector_n_nearest_max(bucket,best_N,q,new_M,N,&num_of_retrieved_items);
+        best_N = vector_n_nearest_max(bucket,best_N,q,new_M,N,&num_of_retrieved_items,L2);
         for( ; i < size_HT(hash_table); i++){
             if(hamming_distance(index,i) == ham_dist){
                 new_index = i;

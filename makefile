@@ -1,12 +1,12 @@
 CC=gcc
 CFLAGS=-Wall
-OBJECTS = data.o vector_list.o vector.o random.o HT.o hash.o mod.o loading.o lsh.o cube.o stack.o math_custom.o curve.o timer.o grid.o
+OBJECTS = data.o vector_list.o vector.o random.o HT.o hash.o mod.o loading.o lsh.o cube.o stack.o math_custom.o timer.o grid.o
 MAIN = main.o
 MAIN2 = main2.o
 MAIN3 = main3.o
 LSH = lsh.o
 CUBE = cube.o
-CLUSTER = cluster.o
+CLUSTER = cluster.o cluster_main.o
 SEARCH = search.o
 GRID = grid.o
 PLUS= -g -Og
@@ -64,9 +64,6 @@ loading.o 	: loading.c
 math_custom.o	: math_custom.c
 	$(CC) $(CFLAGS) -c math_custom.c -o math_custom.o
 
-curve.o			: curve.c
-	$(CC) $(CFLAGS) -c curve.c -o curve.o
-
 grid.o			: grid.c
 	$(CC) $(CFLAGS) -c grid.c -o grid.o
 
@@ -91,6 +88,9 @@ cube.o			: cube.c
 cluster.o			: cluster.c
 	$(CC) $(CFLAGS) -c cluster.c -o cluster.o
 
+cluster_main.o			: cluster_main.c
+	$(CC) $(CFLAGS) -c cluster_main.c -o cluster_main.o
+
 search.o   			: search.c
 	$(CC) $(CFLAGS) -c search.c -o search.o
 
@@ -99,4 +99,4 @@ search.o   			: search.c
 clean:
 	rm -f $(OBJECTS) main3 main2 main lsh cube cluster search \
 	main3.o main2.o main.o lsh.o cube.o cluster.o cluster_main.o \
-	search.o stack.o math_custom.o curve.o timer.o grid.o
+	search.o stack.o math_custom.o timer.o grid.o

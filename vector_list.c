@@ -427,7 +427,7 @@ void reverse_vectorList(pList pvl){
     pvl->first = tmp_prev;
 }
 
-pList vector_n_nearest_ID(pList pvl,pList nearests,pVector q,long int ID,int N){
+pList vector_n_nearest_ID(pList pvl,pList nearests,pVector q,long int ID,int N,dist_type metric){
     if(pvl == NULL || q == NULL){ printf(" - Error! In vector_nearest, pvl or/and p0 are NULLS !\n");  return NULL;}
     pList nearests_new;
     if( nearests == NULL ){ nearests_new = create_list(pvl->dim); }
@@ -465,7 +465,7 @@ pList vector_n_nearest_ID(pList pvl,pList nearests,pVector q,long int ID,int N){
     return nearests_new;
 }
 
-pList vector_n_nearest_max(pList pvl,pList nearests,pVector q,double M,int N,int *num_retrieved_items){
+pList vector_n_nearest_max(pList pvl,pList nearests,pVector q,double M,int N,int *num_retrieved_items,dist_type metric){
     *num_retrieved_items = 0;
     if(pvl == NULL || q == NULL){ printf(" - Error! In vector_nearest, pvl or/and p0 are NULLS !\n");  return NULL;}
      
@@ -502,14 +502,14 @@ pList vector_n_nearest_max(pList pvl,pList nearests,pVector q,double M,int N,int
     return nearests_new;
 }
 
-pList vector_n_nearest(pList pvl,pVector q,int N){
+pList vector_n_nearest(pList pvl,pVector q,int N,dist_type metric){
     if(q == NULL || pvl == NULL){ return NULL; }
     int num_of_retrieved_items = 0;
-    pList best_N = vector_n_nearest_max(pvl,NULL,q,INFINITY,N,&num_of_retrieved_items);
+    pList best_N = vector_n_nearest_max(pvl,NULL,q,INFINITY,N,&num_of_retrieved_items,metric);
     return best_N;
 }
 
-long int vector_nearest_number(pList pvl,pVector q){
+long int vector_nearest_number(pList pvl,pVector q,dist_type metric){
     if(q == NULL || pvl == NULL){ return -1; printf("- Error (vector_nearest_number)! Vector or/and List are NULL\n"); }
     long int index = 0;
     long int i = 0;
@@ -525,7 +525,7 @@ long int vector_nearest_number(pList pvl,pVector q){
     return index;
 }
 
-pList vector_range_search(pList pvl,pList range_search_list,pVector p0,double M,double R,int *num_retrieved_items){
+pList vector_range_search(pList pvl,pList range_search_list,pVector p0,double M,double R,int *num_retrieved_items,dist_type metric){
     if(pvl == NULL || p0 == NULL){        printf(" - Error! In vector_range_search, pvl or/and p0 are NULLS !\n");  return NULL;}
     else if(pvl->dim != vector_dim(p0) ){ printf(" - Error! In vector_range_search, pvl->dim != p0->dim !\n");      return NULL;}
     if(range_search_list == NULL)
@@ -550,7 +550,9 @@ pList vector_range_search(pList pvl,pList range_search_list,pVector p0,double M,
     return range_search_list;
 }
 
-pList vector_range_search_cluster(pList pvl,pList range_search_list,pVector* centroids,double M,double R,long int cluster_id,int *num_retrieved_items){
+pList vector_range_search_cluster(pList pvl,pList range_search_list,pVector* centroids,double M,\
+        double R,long int cluster_id,int *num_retrieved_items,dist_type metric)
+{
     if(pvl == NULL){        printf(" - Error! In vector_range_search_cluster, pvl is NULL !\n");  return NULL;}
     if(range_search_list == NULL)
         range_search_list = create_list(pvl->dim);

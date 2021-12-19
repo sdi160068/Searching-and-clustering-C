@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "vector_list.h"
-#include "curve.h"
+#include "vector.h"
 #include "timer.h"
 
 // #define NAN

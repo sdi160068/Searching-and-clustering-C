@@ -156,13 +156,13 @@ int lsh(int k, int L, char* input_file ,char* output_file, char* query_file){
             for(pVector query_vector = vector_next(queries); query_vector != NULL; query_vector = vector_next(queries)){
                 // find approximate nearest neighbor via lsh and calculate time to complete
                 start_timer();
-                nearest_neighbors = lsh_n_nearests(plsh0, query_vector,1);
+                nearest_neighbors = lsh_n_nearests(plsh0, query_vector,1,L2);
                 lsh_timer = stop_timer();
                 lsh_timer_average += lsh_timer;
 
                 // find approximate nearest neighbor via brute force and calculate time to complete
                 start_timer();
-                nearest_neighbors_brute = vector_n_nearest(pvl,query_vector,1);
+                nearest_neighbors_brute = vector_n_nearest(pvl,query_vector,1,L2);
                 true_timer = stop_timer();
                 true_timer_average += true_timer;
             
@@ -205,7 +205,7 @@ int lsh(int k, int L, char* input_file ,char* output_file, char* query_file){
     return 0;
 }
 
-int lsh_discrete_frechet(int k, int L, double delta,char* input_file ,char* output_file, char* query_file){
+int lsh_frechet(int k, int L, double delta,char* input_file ,char* output_file, char* query_file,dist_type metric){
     // List with all vectors
     pList pvl = create_list_file(input_file,"Create Vector list from file progress : ");
     printf("List of vectors is ready !\n");
@@ -250,13 +250,13 @@ int lsh_discrete_frechet(int k, int L, double delta,char* input_file ,char* outp
             for(pVector query_vector = vector_next(queries); query_vector != NULL; query_vector = vector_next(queries)){
                 // find approximate nearest neighbor via lsh and calculate time to complete
                 start_timer();
-                nearest_neighbors = lsh_n_nearests(plsh0, query_vector,1);
+                nearest_neighbors = lsh_n_nearests(plsh0, query_vector,1,metric);
                 lsh_timer = stop_timer();
                 lsh_timer_average += lsh_timer;
 
                 // find approximate nearest neighbor via brute force and calculate time to complete
                 start_timer();
-                nearest_neighbors_brute = vector_n_nearest(pvl,query_vector,1);
+                nearest_neighbors_brute = vector_n_nearest(pvl,query_vector,1,metric);
                 true_timer = stop_timer();
                 true_timer_average += true_timer;
             
@@ -299,7 +299,7 @@ int lsh_discrete_frechet(int k, int L, double delta,char* input_file ,char* outp
     return 0;
 }
 
-pList lsh_n_nearests(pLsh plsh0,pVector q,int N){
+pList lsh_n_nearests(pLsh plsh0,pVector q,int N,dist_type metric){
     if(q == NULL || plsh0 == NULL){ return NULL; }
     pList best_N = NULL;
     long int ID ,index;
@@ -308,7 +308,7 @@ pList lsh_n_nearests(pLsh plsh0,pVector q,int N){
         ID = hash_ID(plsh0->g_hash[l],q);
         index = mod(ID,plsh0->size);     // g(p) = ID(p) mod table_size
         bucket = HT_bucket(plsh0->hash_tables[l],index);
-        best_N = vector_n_nearest_ID(bucket,best_N,q,ID,N);
+        best_N = vector_n_nearest_ID(bucket,best_N,q,ID,N,metric);
     }
     return best_N;
 }
