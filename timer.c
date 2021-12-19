@@ -1,14 +1,14 @@
 #include <stdio.h>
 #include "timer.h"
-#include <time.h>
+#include <sys/time.h>
 
-static clock_t t;
+struct timeval stop, start;
 static int ok = 1;
 
 int start_timer(){
     if(ok){
         ok = 0;
-        t = clock();
+        gettimeofday(&start, NULL);
         return 0;
     }
     return 1;
@@ -16,8 +16,9 @@ int start_timer(){
 
 double stop_timer(){
     if(!ok){
-        t = clock() - t;
-        return ((double)t)/CLOCKS_PER_SEC;
+        gettimeofday(&stop, NULL);
+        ok = 1;
+        return ((stop.tv_sec - start.tv_sec) * 1000000 + stop.tv_usec - start.tv_usec) / 1000000.0;
     }
     return -1;
 }
