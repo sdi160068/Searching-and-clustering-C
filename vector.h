@@ -27,7 +27,10 @@ void print_vector(pVector p0); // prints "node of list with id" if the node exis
 void fprint_vector(pVector p0,FILE* fp);
 void print_vector_coords(pVector p0);
 
+double distance(dist_type metric,pVector p0, pVector p1);
+
 double dist_L2(pVector p0, pVector p1);     // distance^2
+double dist_frechet(pVector p0, pVector p1);    // frechet distance
 
 double* point_curve(pVector c0,int index, double* point);
 
@@ -36,9 +39,10 @@ void print_point(double* p);
 int delete_point_curve(double** point);
 
 double dist_discrete_frechet(pVector p0, pVector p1);
-double dist_frechet(pVector p0, pVector p1);
 
 pVector snapping_curve(pVector p0,pVector t,double delta);     // snapping : floor((x-t)/delta + 1/2)*delta +t
-pVector remove_duplicates_curve(pVector p0,int d,double padding_number);     // remove duplicates and add pudding number 
+pVector remove_duplicates_curve(pVector p0,double padding_number);     // remove duplicates and add pudding number 
+
+double get_larger_number_vector();
 
 #endif

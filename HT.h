@@ -15,7 +15,11 @@ typedef struct bucket* pBucket;
 
 pHT init_HT(long int number,int dim);   // initialize hash table struct
 
+pHT init_HT_frechet(long int size,int dim);   // initialize hash table struct
+
 int new_HT_element(pHT ph, pVector p0,unsigned long int ID,long int index);  // return 0 for success, 1 for error
+
+int new_HT_frechet_element(pHT ph, pVector p0,pVector p0_key,long int index);
 
 void print_HT(pHT p0);
 
@@ -25,10 +29,10 @@ void fprint_HT_lite(pHT p0,long int data_size, FILE* fp);      // print hash tab
 
 void delete_HT(pHT* pp0);
 
-void delete_full_HT(pHT* pp0);   // delete hash table - pointer will point to NULL
-
 long int size_HT(pHT p0);
 
 pList HT_bucket(pHT p0,long int bucket_id);
+
+pList HT_bucket2(pHT p0,long int bucket_id);
 
 #endif

@@ -15,4 +15,8 @@ void delete_grid(pGrid* pp0);
 
 pVector lsh_key_grid(pVector curve, pGrid pg, double pudding_number);
 
+void print_grid(pGrid p0);
+
+pVector t_grid(pGrid pg);
+
 #endif

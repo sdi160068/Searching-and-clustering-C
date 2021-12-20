@@ -8,7 +8,8 @@
 /*----- S T U C T -----*/
 typedef struct hash_table{
     long int size;          // size == number of buckets
-    pList* hTable;   // hash table
+    pList* hTable;          // hash table
+    pList* hTable2;         // use for saving original curve in hash table ( only for Frechet)
 }hash_table;
 /*-----------------------*/
 
@@ -17,8 +18,17 @@ pHT init_HT(long int size,int dim){   // initialize hash table struct
     hash_table* p0 = malloc(sizeof(hash_table));
     p0->size = size;
     p0->hTable = malloc(sizeof(pList)*size);
+    p0->hTable2 = NULL;
     for(long int i=0; i < size; i++)
         p0->hTable[i] = create_list(dim);
+    return p0;
+}
+
+pHT init_HT_frechet(long int size,int dim){   // initialize hash table struct
+    pHT p0 = init_HT(size,dim);
+    p0->hTable2 = malloc(sizeof(pList)*size);
+    for(long int i=0; i < size; i++)
+        p0->hTable2[i] = create_list(dim);
     return p0;
 }
 
@@ -31,11 +41,27 @@ int new_HT_element(pHT ph, pVector p0,unsigned long int ID,long int index){
     return 0;
 }
 
+int new_HT_frechet_element(pHT ph, pVector p0,pVector p0_key,long int index){
+    if(index < 0 || index >= ph->size){ 
+        printf(" - Error! index == %ld ,but hashTable->size == %ld !\n",index,ph->size);
+        return 1;
+    }
+    new_vector(ph->hTable[index],p0_key,-1);
+    new_vector(ph->hTable2[index],p0,-1);
+    return 0;
+}
+
 void print_HT(pHT p0){      // print hash table contex
     printf("Hash Table Buckets :\n\n");
     for(long int i = 0; i< p0->size; i++){
         printf("------\nBucket %ld : \n------\n\n",i);
         print_list(p0->hTable[i]);
+    }
+    if(p0->hTable2 != NULL){
+        for(long int i = 0; i< p0->size; i++){
+            printf("------\nBucket2 %ld : \n------\n\n",i);
+            print_list(p0->hTable2[i]);
+        }   
     }
 }
 
@@ -44,6 +70,12 @@ void print_HT_lite(pHT p0){      // print hash table contex - only numbers of ve
     for(long int i = 0; i< p0->size; i++){
         printf("------\nBucket %ld : \n------\n\n",i);
         printf(" - size : %ld\n - dim  : %d\n",size_of_list(p0->hTable[i]),dimensions_of_list(p0->hTable[i]));
+    }
+    if(p0->hTable2 != NULL){
+        for(long int i = 0; i< p0->size; i++){
+            printf("------\nBucket2 %ld : \n------\n\n",i);
+            printf(" - size : %ld\n - dim  : %d\n",size_of_list(p0->hTable2[i]),dimensions_of_list(p0->hTable[i]));
+        }  
     }
 }
 
@@ -75,21 +107,22 @@ void fprint_HT_lite(pHT p0,long int data_size, FILE* fp){      // print hash tab
 }
 
 void delete_HT(pHT* pp0){   // delete hash table - pointer will point to NULL
-    for(long int i = 0; i< (*pp0)->size; i++){
-        delete_list_no_vectors(&(*pp0)->hTable[i]);
-        (*pp0)->hTable[i] = NULL;
+    if((*pp0)->hTable2 != NULL){
+        for(long int i = 0; i< (*pp0)->size; i++){
+            delete_list(&(*pp0)->hTable[i]);
+            (*pp0)->hTable[i] = NULL;
+            delete_list_no_vectors(&(*pp0)->hTable2[i]);
+            (*pp0)->hTable2[i] = NULL;
+        } 
+    }
+    else{
+        for(long int i = 0; i< (*pp0)->size; i++){
+            delete_list_no_vectors(&(*pp0)->hTable[i]);
+            (*pp0)->hTable[i] = NULL;
+        }
     }
     free((*pp0)->hTable);
-    free(*pp0);
-    *pp0 = NULL;
-}
-
-void delete_full_HT(pHT* pp0){   // delete hash table - pointer will point to NULL
-    for(long int i = 0; i< (*pp0)->size; i++){
-        delete_list(&(*pp0)->hTable[i]);
-        (*pp0)->hTable[i] = NULL;
-    }
-    free((*pp0)->hTable);
+    free((*pp0)->hTable2);
     free(*pp0);
     *pp0 = NULL;
 }
@@ -101,6 +134,17 @@ long int size_HT(pHT p0){
 
 pList HT_bucket(pHT p0,long int bucket_id){
     if(p0 == NULL){printf(" - Error! Hash table is NULL\n"); return NULL;}
+    else if(p0->size == 0){ printf(" - Error! Hash table has size == 0\n"); return NULL;}
+    else if(bucket_id < 0 || bucket_id >= p0->size){
+        printf(" - Error! bucket_id %ld is < or >= of hash table size (%ld)\n",bucket_id,p0->size);
+        return NULL;
+    }
+    return p0->hTable[bucket_id];
+}
+
+pList HT_bucket2(pHT p0,long int bucket_id){
+    if(p0 == NULL){printf(" - Error! Hash table is NULL\n"); return NULL;}
+    else if(p0->hTable2 == NULL){printf(" - Error! Hash table doesn't use the second table\n"); return NULL;}
     else if(p0->size == 0){ printf(" - Error! Hash table has size == 0\n"); return NULL;}
     else if(bucket_id < 0 || bucket_id >= p0->size){
         printf(" - Error! bucket_id %ld is < or >= of hash table size (%ld)\n",bucket_id,p0->size);

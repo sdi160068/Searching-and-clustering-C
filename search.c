@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "vector.h"
 
 int main(int argc, char* argv[]){
     // C h e c k   f o r   p a r a m e t e r s
@@ -14,7 +15,7 @@ int main(int argc, char* argv[]){
     int L = 5;
     int M = 10;
     int probes = 2;
-    double delta = 0.0;
+    double delta = 1.0;
 
     // Parameters must have values
     char *input_file    = NULL;
@@ -88,7 +89,10 @@ int main(int argc, char* argv[]){
     else if(!(file = fopen(query_file,"r"))){ printf(" - Error! %s doesn't exist\n",query_file); check = 1; }
     else { fclose(file); }
 
+    if(delta <= 0.0){        printf(" - Error! Delta must be > 0 \n"); check = 1;  }
+
     char algorithm_index;
+    dist_type metric_bit = L2;
     if(algorithm != NULL ){
         // check algorithm
         if (!strcmp(algorithm,"LSH"))           {     algorithm_index = 'L';  }     // LSH
@@ -107,10 +111,13 @@ int main(int argc, char* argv[]){
     else{printf(" - Error! You must give an algorithm\n"); check = 1;}
     if(metric != NULL){
         // check metric
-        if(algorithm_index == 'F' && strcmp(metric,"discrete") && strcmp(metric,"continuous")){
-            printf(" - Error! Metric must be 'discrete' or 'continuous'\n"); check = 1;
+        if(algorithm_index == 'F'){
+            if(!strcmp(metric,"discrete"))       {  metric_bit = discrete_frechet;   }
+            else if(!strcmp(metric,"continuous")){  metric_bit = continuous_frechet; }
+            else{   printf(" - Error! Metric must be 'discrete' or 'continuous'\n"); check = 1; }
         }
     }
+    else{   printf(" - Error! Metric must be 'discrete' or 'continuous'\n"); check = 1; }
 
     if(check){ 
         free(input_file);
@@ -119,7 +126,6 @@ int main(int argc, char* argv[]){
         return 1;           // if there are any errors, return 1
     }  
     
-
     printf("+--------------------------------------------------\n");
     printf("| k             %d\n",k);
     printf("| L             %d\n",L);
@@ -142,6 +148,11 @@ int main(int argc, char* argv[]){
         printf("algorithm     Hypercube\n");
         printf("+--------------------------------------------------\n");
         cube(k,M,probes,input_file,output_file,query_file);
+        break;
+    case 'F':
+        printf("algorithm     Frechet\n");
+        printf("+--------------------------------------------------\n");
+        lsh_frechet(k,L,delta,input_file,output_file,query_file,metric_bit);
         break;
     default:
         break;

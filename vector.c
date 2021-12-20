@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include "vector.h"
 
+static double larger_number = -1.0;
+
 typedef struct vector{
     long int cluster;   // cluster index ( for clustering )
     char* id;    // id of vector
@@ -35,6 +37,7 @@ pVector init_vector(char* id,int dim,float* coords){
     strcpy(pln->id,id);
     for(int i=0; i<dim; i++ ){
         pln->coords[i] = coords[i];
+        larger_number = max(coords[i],larger_number);
     }
     return pln;
 }
@@ -126,6 +129,20 @@ void print_vector_coords(pVector p0){
 
 }
 
+
+double distance(dist_type metric,pVector p0, pVector p1){
+    switch (metric)
+    {
+    case discrete_frechet :
+        return dist_frechet(p0,p1);
+        break;
+    case L2 :
+    default:
+        return dist_L2(p0,p1);
+    }
+    return 0.0;
+}
+
 double dist_L2(pVector p0, pVector p1){     // distance^2
     if(p0 == NULL || p1 == NULL){ printf(" - Error! p0 or p1 are NULL !\n"); return EOF; }
     else if(p0->dim != p1->dim){  printf(" - Error! p0->dim=%d and p1->dim=%d ! Different dimensions\n",p0->dim,p1->dim); return EOF; }
@@ -135,27 +152,6 @@ double dist_L2(pVector p0, pVector p1){     // distance^2
         dist += pow(p0->coords[i]-p1->coords[i],2.0); // (x-y)^2
     }
     return dist;
-}
-
-double* point_curve(pVector c0,int index, double* point){
-    if(c0 == NULL ){ printf("Error! Return NULL");return NULL;}
-    else if(vector_dim(c0)%2 != 0 ){ printf("Error! Curves-vectors must have even number of coordinates\n"); return NULL;}
-    else if(index*2 >vector_dim(c0) ){printf("Error! Index out of range !\n"); return NULL;}
-    int index_t = index*2;
-    point[0] = vector_coord(c0,index_t);
-    point[1] = vector_coord(c0,index_t+1);
-    return point;
-}
-
-void print_point(double* p){
-    printf("(%lf,%lf)\n",p[0],p[1]);
-}
-
-int delete_point_curve(double** point){
-    if(*point == NULL){ return 1;}
-    free(*point);
-    *point = NULL;
-    return 0;
 }
 
 double dist_frechet(pVector p0, pVector p1){
@@ -186,42 +182,63 @@ double dist_frechet(pVector p0, pVector p1){
     return c[size0-1][size1-1];
 }
 
+double* point_curve(pVector c0,int index, double* point){
+    if(c0 == NULL ){ printf("Error! Return NULL");return NULL;}
+    else if(vector_dim(c0)%2 != 0 ){ printf("Error! Curves-vectors must have even number of coordinates\n"); return NULL;}
+    else if(index*2 >vector_dim(c0) ){printf("Error! Index out of range !\n"); return NULL;}
+    int index_t = index*2;
+    point[0] = vector_coord(c0,index_t);
+    point[1] = vector_coord(c0,index_t+1);
+    return point;
+}
+
+void print_point(double* p){
+    printf("(%lf,%lf)\n",p[0],p[1]);
+}
+
+int delete_point_curve(double** point){
+    if(*point == NULL){ return 1;}
+    free(*point);
+    *point = NULL;
+    return 0;
+}
+
 pVector snapping_curve(pVector p0,pVector t,double delta){
     if(p0 == NULL || t == NULL){ printf(" - Error! p0 or t are NULL !\n"); return NULL; }
-    float coords[vector_dim(p0)];
     int num = vector_dim(p0);
+    float coords[num];
     for(int i=0; i< num; i=i+2){
         for( int j=0; j< vector_dim(t); j++){
             coords[i+j] = floor((vector_coord(p0,i+j) - vector_coord(t,j) )/delta+0.5)*delta + vector_coord(t,j);
         }
     }
-    return init_vector(vector_id(p0),vector_dim(p0),coords);
+    return init_vector(vector_id(p0),num,coords);
 }
 
-pVector remove_duplicates_curve(pVector p0,int d,double padding_number){
+pVector remove_duplicates_curve(pVector p0,double padding_number){
     if(p0 == NULL){ printf(" - Error! p0 is NULL !\n"); return NULL; }
     float coords[vector_dim(p0)];
     
     float tmp_x = vector_coord(p0,0);
     float tmp_y = vector_coord(p0,1);
-    int counter = d;
+    int counter = 2;
     coords[0] = vector_coord(p0,0);
     coords[1] = vector_coord(p0,1);
 
 
-    for( int i=d; i<vector_dim(p0); i+=d){
+    for( int i=2; i<vector_dim(p0); i+=2){
         if(tmp_x == vector_coord(p0,i) && tmp_y == vector_coord(p0,i+1)){
-            printf("same !!\n");
             continue;
         }
         else{
             // copy to new array
-            coords[i] = vector_coord(p0,i);
-            coords[i+1] = vector_coord(p0,i+1);
+            coords[counter] = vector_coord(p0,i);
+            coords[counter+1] = vector_coord(p0,i+1);
 
             // set tmp_x, tmp_y
             tmp_x = vector_coord(p0,i);
             tmp_y = vector_coord(p0,i+1);
+            counter+=2;
         }
     }
     if( counter < vector_dim(p0)){
@@ -230,4 +247,9 @@ pVector remove_duplicates_curve(pVector p0,int d,double padding_number){
     }
 
     return init_vector(vector_id(p0),vector_dim(p0),coords);
+}
+
+
+double get_larger_number_vector(){
+    return larger_number;
 }

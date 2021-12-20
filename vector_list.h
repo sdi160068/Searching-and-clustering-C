@@ -40,6 +40,7 @@ void print_list_full(pList pvl);
 
 void lnode_set_dist(pLnode p0,double dist);
 
+pVector vector_nearest(pList pvl,pList nearests,pVector q,dist_type metric);
 pList vector_n_nearest_ID(pList pvl,pList nearests,pVector q,long int ID,int N,dist_type metric);
 pList vector_n_nearest_max(pList pvl,pList nearests,pVector q,double M,int N,int *num_retrieved_items,dist_type metric);
 pList vector_n_nearest(pList pvl,pVector q,int N,dist_type metric);
@@ -66,7 +67,7 @@ void reverse_vectorList(pList pvl);
 
 pVector* list_to_array_vector(pList pvl);
 
-double silhouette(pList* items_clusters,pVector pi,long int cluster,pList clusters_list);
+double silhouette(pList* items_clusters,pVector pi,long int cluster,pList clusters_list, dist_type metric);
 
 pVector mean_vector(pList pvl, char * id);
 

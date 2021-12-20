@@ -1,4 +1,3 @@
-#include "grid.h"
 #include "hash.h"
 #include "HT.h"
 #include "loading.h"
@@ -61,7 +60,7 @@ pLsh init_by_grids_lsh(int size,int L, int k,pGrid* grids, pList pvl){
 
     // initialize hash tables anf g hash functions
     for(int i=0; i<L; i++){
-        plsh0->hash_tables[i] = init_HT(size,dimensions_of_list(pvl));
+        plsh0->hash_tables[i] = init_HT_frechet(size,dimensions_of_list(pvl));
         plsh0->g_hash[i] = init_g(k,dimensions_of_list(pvl));
     }
 
@@ -69,12 +68,12 @@ pLsh init_by_grids_lsh(int size,int L, int k,pGrid* grids, pList pvl){
     double pudding_number = 10000000.0;
 
     // put vectors to hash tables
-    pVector curve;
+    pVector pv_key;
     for(pVector pv = vector_next(pvl); pv != NULL; pv =  vector_next(pvl)){
         for(int i=0; i<L; i++){
-            curve = lsh_key_grid(pv,grids[i],pudding_number);
-            long int index = hash_g(plsh0->g_hash[i],curve,size);
-            new_HT_element(plsh0->hash_tables[i],pv,hash_ID(plsh0->g_hash[i],curve),index);
+            pv_key = lsh_key_grid(pv,grids[i],pudding_number);
+            long int index = hash_g(plsh0->g_hash[i],pv_key,size);
+            new_HT_frechet_element(plsh0->hash_tables[i],pv,pv_key,index);
         }
         pv = vector_next(pvl);
         loading();
@@ -90,19 +89,6 @@ int delete_lsh(pLsh * plsh0){
     if( *plsh0 == NULL){ printf("Warning (delete_lsh )! plsh0 is NULL!\n"); return 1;}
     for(int i=0; i< (*plsh0)->L; i++){
         delete_HT(&(*plsh0)->hash_tables[i]);
-        delete_g(&(*plsh0)->g_hash[i]);
-    }
-    free((*plsh0)->hash_tables);
-    free((*plsh0)->g_hash);
-    free(*plsh0);
-    *plsh0 = NULL;
-    return 0;
-}
-
-int delete_frechet_lsh(pLsh * plsh0){
-    if( *plsh0 == NULL){ printf("Warning (delete_lsh )! plsh0 is NULL!\n"); return 1;}
-    for(int i=0; i< (*plsh0)->L; i++){
-        delete_full_HT(&(*plsh0)->hash_tables[i]);
         delete_g(&(*plsh0)->g_hash[i]);
     }
     free((*plsh0)->hash_tables);
@@ -167,7 +153,7 @@ int lsh(int k, int L, char* input_file ,char* output_file, char* query_file){
                 true_timer_average += true_timer;
             
                 // write results for each query to output file
-                lsh_fprintf(output,nearest_neighbors,nearest_neighbors_brute,query_vector,lsh_timer,true_timer);
+                lsh_fprintf(output,nearest_neighbors,nearest_neighbors_brute,query_vector,lsh_timer,true_timer,L2);
 
                 // delete lists of vectors for vector query_vector
                 delete_list_no_vectors(&nearest_neighbors);
@@ -206,14 +192,20 @@ int lsh(int k, int L, char* input_file ,char* output_file, char* query_file){
 }
 
 int lsh_frechet(int k, int L, double delta,char* input_file ,char* output_file, char* query_file,dist_type metric){
+    if(delta <= 0 ){ printf("Error ()! delta must be > 0\n"); return 1;}
+
     // List with all vectors
     pList pvl = create_list_file(input_file,"Create Vector list from file progress : ");
     printf("List of vectors is ready !\n");
 
+    double larger_coord = get_larger_number_vector();
+    double pudding_number = random_double(larger_coord, larger_coord+100.0);   // get pudding number between larger number of coordinate and +100
+
     // size of hash tables
     long int table_size = size_of_list(pvl)/16 ;  // table_size = n/16
 
-    pGrid* grids = init_grids_table(delta, L, dimensions_of_list(pvl) );
+    pGrid* grids = init_grids_table(delta, L,2);
+
     pLsh plsh0 = init_by_grids_lsh(table_size,L,k,grids,pvl);
 
     // Open output_file for write
@@ -227,6 +219,7 @@ int lsh_frechet(int k, int L, double delta,char* input_file ,char* output_file, 
     double true_timer_average = 0;
 
     // query_file_curr -> stores name of current query_file.
+
     char* query_file_curr = malloc(sizeof(char)*(strlen(query_file)+1) );
     strcpy(query_file_curr,query_file);
 
@@ -250,7 +243,7 @@ int lsh_frechet(int k, int L, double delta,char* input_file ,char* output_file, 
             for(pVector query_vector = vector_next(queries); query_vector != NULL; query_vector = vector_next(queries)){
                 // find approximate nearest neighbor via lsh and calculate time to complete
                 start_timer();
-                nearest_neighbors = lsh_n_nearests(plsh0, query_vector,1,metric);
+                nearest_neighbors = lsh_frechet_n_nearest(plsh0,grids,query_vector,pudding_number,1,metric);
                 lsh_timer = stop_timer();
                 lsh_timer_average += lsh_timer;
 
@@ -261,7 +254,7 @@ int lsh_frechet(int k, int L, double delta,char* input_file ,char* output_file, 
                 true_timer_average += true_timer;
             
                 // write results for each query to output file
-                lsh_fprintf(output,nearest_neighbors,nearest_neighbors_brute,query_vector,lsh_timer,true_timer);
+                lsh_fprintf(output,nearest_neighbors,nearest_neighbors_brute,query_vector,lsh_timer,true_timer,metric);
 
                 // delete lists of vectors for vector query_vector
                 delete_list_no_vectors(&nearest_neighbors);
@@ -291,8 +284,9 @@ int lsh_frechet(int k, int L, double delta,char* input_file ,char* output_file, 
         if(query_file_curr == NULL){ check = 0;}
     }
 
+    delete_grids_table(&grids);
+    delete_lsh(&plsh0);
     delete_list(&pvl);
-    delete_frechet_lsh(&plsh0);
 
     // close files
     fclose(output);
@@ -313,7 +307,23 @@ pList lsh_n_nearests(pLsh plsh0,pVector q,int N,dist_type metric){
     return best_N;
 }
 
-void lsh_fprintf(FILE* output,pList nn_list,pList nn_brute_list,pVector q,double lsh_timer,double true_timer){
+pList lsh_frechet_n_nearest(pLsh plsh0,pGrid* grids,pVector q,double pudding_number,int N,dist_type metric){
+    if(q == NULL || plsh0 == NULL || grids == NULL){ return NULL; }
+    pList best_N = NULL;
+    long int index;
+    pList bucket2;
+ 	pVector q_key;
+    for(int l=0; l<plsh0->L; l++){
+    	q_key = lsh_key_grid(q,grids[l],pudding_number);
+        index = hash_g(plsh0->g_hash[l],q_key,plsh0->size);
+        bucket2 = HT_bucket2(plsh0->hash_tables[l],index);
+        best_N = vector_n_nearest_ID(bucket2,best_N,q,-1,1,metric);
+        delete_vector(&q_key);
+    }
+    return best_N;
+}
+
+void lsh_fprintf(FILE* output,pList nn_list,pList nn_brute_list,pVector q,double lsh_timer,double true_timer,dist_type metric){
     if(output == NULL || nn_list == NULL || nn_brute_list == NULL || q == NULL){
         printf("- Error! output,nn_list, nn_brute_list or q are NULL !\n");
         return;
@@ -336,8 +346,8 @@ void lsh_fprintf(FILE* output,pList nn_list,pList nn_brute_list,pVector q,double
     while( tmp1 != NULL && tmp2 != NULL){
         fprintf(output,"Approximate Nearest neighbor: %s\n",vector_id(tmp1));
         fprintf(output,"True Nearest neighbor: %s\n",vector_id(tmp2));
-        fprintf(output,"distanceApproximate: %lf\n",sqrt( dist_L2(q,tmp1) ) );
-        fprintf(output,"distanceTrue: %lf\n",sqrt( dist_L2(q,tmp2) ) );
+        fprintf(output,"distanceApproximate: %lf\n",sqrt( distance(metric,q,tmp1) ) );
+        fprintf(output,"distanceTrue: %lf\n",sqrt( distance(metric,q,tmp2) ) );
         tmp1 = vector_next(nn_list);
         tmp2 = vector_next(nn_brute_list);
         neighbor_number++;
