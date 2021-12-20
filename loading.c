@@ -14,6 +14,7 @@ int init_loading(char* text,int size){
         ltext = text;
         step = size/100-1;
         loop_size = size;
+        if(size == 0){ loop_size = 1;}
         i = 0;
         check = 0;
         count = 0;

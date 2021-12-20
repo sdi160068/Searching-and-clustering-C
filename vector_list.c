@@ -67,6 +67,28 @@ pList  create_list_file(char* filename,char* message){
     return pl;
 }
 
+pList  create_list_curves_file(char* filename,char* message){
+    pList pl = NULL;
+    long int lines = lines_of_file(filename);
+    if(lines < 0){return NULL;}          // if there is no file , return NULL
+    FILE* file = fopen(filename,"r");
+    pData pd = return_data(file);
+    if(message != NULL)
+        init_loading(message,lines);
+    // init_loading("Create Vector list from file progress : ",lines);
+    if(pd != NULL)
+        pl = create_list((data_getSize(pd)-1)*2);
+    while(pd != NULL){
+        new_curve_data(pl,pd);
+        free_data(&pd);
+        pd = return_data(file);
+        loading();
+    }
+    end_loading();
+    fclose(file);
+    return pl;
+}
+
 /* Initialize lnode ( node of vectorList)*/
 static pLnode init_lnode(pVector pv){
     if(pv == NULL){ return NULL;}
@@ -152,6 +174,18 @@ int new_vector_data(pList pl,pData p0){
     if(p0 == NULL)
         return 1;
     pVector pv = init_vector_pData(p0); 
+    if(new_vector(pl,pv,-1)){
+        delete_vector(&pv);
+        return 1;
+    }
+    return 0;
+}
+
+/* Takes a data object to make a Vector object and push it to vectorList. If success , returns 0, else returns 1 */
+int new_curve_data(pList pl,pData p0){
+    if(p0 == NULL)
+        return 1;
+    pVector pv = init_curve_pData(p0); 
     if(new_vector(pl,pv,-1)){
         delete_vector(&pv);
         return 1;
@@ -296,6 +330,18 @@ void delete_list_no_vectors(pList* ppl){  // Free only pointers of list, no vect
     *ppl = NULL;
 }
 
+long int remaing_items_cluster(pList pvl){
+    if(pvl == NULL){ printf(" - Error (remaing_items_cluster)! Vector List is NULL\n"); return -1;}
+    long int remaing_items = 0;
+    pLnode p0 = pvl->first;
+    while(p0 != NULL){
+        if(vector_cluster(p0->vector) == -1)
+            remaing_items++;
+        p0 = p0->next;
+    }
+    return remaing_items;
+}
+
 void print_list(pList pvl){
     print_list2(pvl,stdout);
 }
@@ -316,7 +362,7 @@ void print_list2(pList pvl,FILE* stream){
         fprintf(stream," ");
         // fprint_vector(pln0->vector,stream);
         fprint_vector(pln0->vector,stream);
-        fprintf(stream," - dist : %lf\n",sqrt(pln0->dist));
+        fprintf(stream," - dist : %lf\n",pln0->dist);
         fprintf(stream," - cluster : %ld\n",vector_cluster(pln0->vector));
         fprintf(stream,"\n");
         pln0 = pln0->next;
@@ -358,6 +404,23 @@ pVector vector_next(pList pvl){  // returns the first vector of list and, in eve
     return pvl->temp->vector;
 }
 
+pVector vector_next_cluster(pList pvl,long int cluster){  // returns the first vector of list and, in every call, returns the next vector
+    if( pvl == NULL){ return NULL;}
+    else if( pvl->size == 0){ return NULL;}
+    else if(pvl->temp == NULL){ 
+        pvl->temp = pvl->first; }
+    else { pvl->temp = pvl->temp->next; }
+
+    while(pvl->temp != NULL){
+        if(vector_cluster(pvl->temp->vector) == cluster)
+            break;
+        pvl->temp = pvl->temp->next;
+    }
+    if(pvl->temp == NULL){ return NULL; }   // if temp is NULL , there is no vector
+    return pvl->temp->vector;
+}
+
+
 pVector list_last(pList pvl){
     if( pvl != NULL){ 
         if( pvl->last != NULL)
@@ -398,7 +461,8 @@ double max_dist_list(pList pvl){
 
 /* transfer vectors from pvl_transfer to pvl */
 int transfer_vectorlist(pList pvl,pList pvl_transfer){
-    if(pvl == NULL || pvl_transfer == NULL){ printf(" - Error! In transfer_vectorlist, pvl or/and pvl_transfer are NULLS !\n"); return 1;}
+    if(pvl == NULL){ printf(" - Error! In transfer_vectorlist, pvl is NULL!\n"); return 1;}
+    if(pvl_transfer == NULL){ return 0;}
     else if(pvl->dim != pvl_transfer->dim){ printf(" - Error! In transfer_vectorlist, pvl->dim != pvl_transfer->dim !\n"); return 1;}
     if(pvl->first == NULL){
         pvl->first = pvl_transfer->first;
@@ -577,7 +641,7 @@ pList vector_range_search(pList pvl,pList range_search_list,pVector p0,double M,
 }
 
 pList vector_range_search_cluster(pList pvl,pList range_search_list,pVector* centroids,double M,\
-        double R,long int cluster_id,int *num_retrieved_items,dist_type metric)
+        double R,long int cluster_id,long int *num_retrieved_items,dist_type metric)
 {
     if(pvl == NULL){        printf(" - Error! In vector_range_search_cluster, pvl is NULL !\n");  return NULL;}
     if(range_search_list == NULL)
@@ -589,7 +653,7 @@ pList vector_range_search_cluster(pList pvl,pList range_search_list,pVector* cen
     else{       MAX = M; }
 
     pLnode plv_node = pvl->first;
-    *num_retrieved_items = 0;
+    (*num_retrieved_items) = 0;
     long int count = 0;
     while( plv_node != NULL && count < MAX){     // search only MAX vectors
         pVector p0 = plv_node->vector;
@@ -600,10 +664,9 @@ pList vector_range_search_cluster(pList pvl,pList range_search_list,pVector* cen
                     if the distance of vector from the new cluster (clusrter)
                      is better than vector's cluster (vectors_cluster), do vector->cluster = cluster
                 */
-                double dist1 = distance(metric,p0,centroids[cluster_id]);
-                double dist2 = distance(metric,p0,centroids[vectors_cluster]);
-                printf("dist(%s,%ld) = %lf\n",vector_id(p0),cluster_id,dist1);
-                printf("dist(%s,%ld) = %lf\n",vector_id(p0),vectors_cluster ,dist2);
+                double dist1, dist2;
+                dist1 = distance(metric,p0,centroids[cluster_id]);
+                dist2 = distance(metric,p0,centroids[vectors_cluster]);
                 if(dist1 < dist2){
                     vector_set_cluster(p0,cluster_id);
                     new_vector_sorted(range_search_list,plv_node->vector,-1,dist1);    // we dont care about ID, so ID = -1
@@ -615,6 +678,7 @@ pList vector_range_search_cluster(pList pvl,pList range_search_list,pVector* cen
             if(  dist <= R ){
                 new_vector_sorted(range_search_list,plv_node->vector,-1,dist);    // we dont care about ID, so ID = -1
                 vector_set_cluster(plv_node->vector,cluster_id);
+                (*num_retrieved_items)++;
             }
         }
         plv_node = plv_node->next;
@@ -648,8 +712,8 @@ double silhouette(pList* items_clusters,pVector pi,long int cluster,pList cluste
     long int new_index = 0;
     double dist = INFINITY;
     long int i=0;
-    for(pLnode p0 = items_clusters[cluster]->first; p0 != NULL; p0 = p0->next){
-        if( vector_cluster(p0->vector) != cluster){
+    for(pLnode p0 = clusters_list->first; p0 != NULL; p0 = p0->next){
+            if( vector_cluster(p0->vector) != cluster){
             double new_dist = distance(metric,p0->vector,pi);
             if( new_dist < dist){
                 dist = new_dist;
@@ -671,12 +735,12 @@ double silhouette(pList* items_clusters,pVector pi,long int cluster,pList cluste
     else{ return (average_b/average_a) - 1.0; }
 }
 
-pVector mean_vector(pList pvl, char* id){
-    if(pvl == NULL){ printf("Error! pVectorList is NULL\n"); return NULL;}
+pVector mean_vector(pList pvl,pVector p0){
+    if(pvl == NULL){ return p0; }
     pLnode node = pvl->first;
     int dim = pvl->dim;
     long int size = pvl->size;
-    float coords[dim];
+    double coords[dim];
     while(node != NULL){
         pVector p0 = node->vector;
         for(int i=0; i<dim; i++){
@@ -684,7 +748,8 @@ pVector mean_vector(pList pvl, char* id){
         }
         node = node->next;
     }
-    return init_vector(id,dim,coords);
+    vector_update_coords(p0,coords);
+    return p0;
 }
 
 int update_centroid_vector(pList pvl, pVector centroid,long int cluster_id){
@@ -705,3 +770,4 @@ int update_centroid_vector(pList pvl, pVector centroid,long int cluster_id){
         printf("Error (update_centroid_vector) ! Something wrong with vector_update_coords !\n");
     return 0;
 }
+

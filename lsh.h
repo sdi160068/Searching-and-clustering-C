@@ -22,8 +22,13 @@ pList lsh_n_nearests(pLsh plsh0,pVector q,int N,dist_type metric);
 
 pList lsh_frechet_n_nearest(pLsh plsh0,pGrid* grids,pVector q,double pudding_number,int N,dist_type metric);
 
-void  lsh_fprintf(FILE* output,pList nn_list,pList nn_brute_list,pVector q,double cube_timer,double true_timer,dist_type metric);
+void lsh_fprintf(FILE* output,pList nn_list,pList nn_brute_list,pVector q,\
+        double lsh_timer,double true_timer,double* appr_factor,dist_type metric);
 
-// pList lsh_clusters_range_search(pVector* centroids,long int centroid_id, pHT* hash_tables,g** g_functions,long int table_size,int L,double R);
+void print_lsh(pLsh plsh0);
+
+pList lsh_clusters_range_search(pVector* centroids,long int centroid_id, pLsh plsh0,int L,double R,pList range_search_list);
+
+long int get_retrieved_items_lsh(pLsh plsh0);
 
 #endif

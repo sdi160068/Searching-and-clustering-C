@@ -1,0 +1,14 @@
+{
+    "files.associations": {
+        "signal.h": "c",
+        "stdio.h": "c",
+        "stdlib.h": "c",
+        "array": "c",
+        "string_view": "c",
+        "initializer_list": "c",
+        "utility": "c",
+        "*.tcc": "c",
+        "vector": "c",
+        "cmath": "c"
+    }
+}

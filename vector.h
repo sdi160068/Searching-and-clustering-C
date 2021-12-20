@@ -8,6 +8,7 @@ typedef enum dist_type{L2, discrete_frechet, continuous_frechet}dist_type;
 typedef struct vector * pVector;
 
 pVector init_vector_pData(pData p0);
+pVector init_curve_pData(pData p0);
 pVector init_vector(char* id,int dim,float* coords);
 
 pVector vector_from_file(FILE* file);
@@ -20,6 +21,8 @@ long int vector_cluster(pVector p0);    // get vector's cluster ( use for cluste
 pVector vector_copy(pVector p0);
 int vector_update_coords(pVector p0,double* coords);
 int vector_set_cluster(pVector p0,long int cluster);    // set vector to have a cluster ( use for clustering ONLY )
+
+void set_epsilon_vector(double new_epsilon);
 
 void delete_vector(pVector* pv);
 
@@ -40,6 +43,10 @@ int delete_point_curve(double** point);
 
 pVector snapping_curve(pVector p0,pVector t,double delta);     // snapping : floor((x-t)/delta + 1/2)*delta +t
 pVector remove_duplicates_curve(pVector p0,double padding_number);     // remove duplicates and add pudding number 
+
+pVector pudding_curve(pVector p0,int new_d,double pudding_number);
+
+pVector filtering_curve(pVector p0);    // curves 2-d
 
 double get_larger_number_vector();
 

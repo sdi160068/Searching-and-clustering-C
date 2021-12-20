@@ -176,8 +176,8 @@ void cube_fprintf(FILE* output,pList nn_list,pList nn_brute_list,pVector q,doubl
     while( tmp1 != NULL && tmp2 != NULL){
         fprintf(output,"Approximate Nearest neighbor: %s\n",vector_id(tmp1));
         fprintf(output,"True Nearest neighbor: %s\n",vector_id(tmp2));
-        fprintf(output,"distanceApproximate: %lf\n",sqrt( dist_L2(q,tmp1) ) );
-        fprintf(output,"distanceTrue: %lf\n",sqrt( dist_L2(q,tmp2) ) );
+        fprintf(output,"distanceApproximate: %lf\n",dist_L2(q,tmp1) );
+        fprintf(output,"distanceTrue: %lf\n", dist_L2(q,tmp2) );
         tmp1 = vector_next(nn_list);
         tmp2 = vector_next(nn_brute_list);
         neighbor_number++;

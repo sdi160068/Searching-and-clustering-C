@@ -1,9 +1,0 @@
-vector_n_nearest_ID
-vector_n_nearest_max
-vector_nearest_number
-vector_range_search
-vector_range_search_cluster
-silhouette
-lsh_n_nearests
-vector_n_nearest
-cluster_Lloyd_method

@@ -5,7 +5,8 @@
 #include <stdlib.h>
 #include "vector.h"
 
-static double larger_number = -1.0;
+static double larger_number = -1.0; // for pudding
+static double epsilon = 0.01;       // for filtering
 
 typedef struct vector{
     long int cluster;   // cluster index ( for clustering )
@@ -16,7 +17,7 @@ typedef struct vector{
 
 pVector init_vector_pData(pData p0){
     pVector pln = malloc(sizeof(vector));
-    pln->coords = malloc(sizeof(int)*(data_getSize(p0)-1));
+    pln->coords = malloc(sizeof(float)*(data_getSize(p0)-1));
     pln->dim = data_getSize(p0)-1;
     pln->cluster = -1;
     char* id = data_getWord(p0,0);
@@ -29,9 +30,25 @@ pVector init_vector_pData(pData p0){
     return pln;
 }
 
+pVector init_curve_pData(pData p0){
+    pVector pln = malloc(sizeof(vector));
+    pln->dim = (data_getSize(p0)-1)*2;
+    pln->coords = malloc(sizeof(float)*(pln->dim));
+    pln->cluster = -1;
+    char* id = data_getWord(p0,0);
+    pln->id = malloc((strlen(id)+1)*sizeof(char));
+    strcpy(pln->id,id);
+    for(int i=1; i<data_getSize(p0); i++ ){
+        pln->coords[(i-1)*2] = (float)(i-1);
+        pln->coords[(i-1)*2+1] = atof(data_getWord(p0,i));
+        larger_number = max(pln->coords[i-1],larger_number);
+    }
+    return pln;
+}
+
 pVector init_vector(char* id,int dim,float* coords){
     pVector pln = malloc(sizeof(vector));
-    pln->coords = malloc(sizeof(int)*dim);
+    pln->coords = malloc(sizeof(float)*dim);
     pln->dim = dim;
     pln->cluster = -1;
     pln->id = malloc((strlen(id)+1)*sizeof(char));
@@ -86,6 +103,9 @@ int vector_set_cluster(pVector p0,long int cluster){    // set vector to have a 
     return 0;
 }
 
+void set_epsilon_vector(double new_epsilon){
+    epsilon = new_epsilon;
+}
 
 char* vector_id(pVector p0){
     if( p0 == NULL) { return NULL;}
@@ -139,7 +159,7 @@ double distance(dist_type metric,pVector p0, pVector p1){
         break;
     case L2 :
     default:
-        return dist_L2(p0,p1);
+        return sqrt(dist_L2(p0,p1));
     }
     return 0.0;
 }
@@ -185,8 +205,8 @@ double dist_frechet(pVector p0, pVector p1){
 
 double* point_curve(pVector c0,int index, double* point){
     if(c0 == NULL ){ printf("Error! Return NULL");return NULL;}
-    else if(vector_dim(c0)%2 != 0 ){ printf("Error! Curves-vectors must have even number of coordinates\n"); return NULL;}
-    else if(index*2 >vector_dim(c0) ){printf("Error! Index out of range !\n"); return NULL;}
+    else if(vector_dim(c0)%2 != 0 ){ printf("- Error! Curves-vectors must have even number of coordinates\n"); return NULL;}
+    else if(index*2 >vector_dim(c0) ){printf("- Error! Index out of range !\n"); return NULL;}
     int index_t = index*2;
     point[0] = vector_coord(c0,index_t);
     point[1] = vector_coord(c0,index_t+1);
@@ -250,6 +270,57 @@ pVector remove_duplicates_curve(pVector p0,double padding_number){
     return init_vector(vector_id(p0),vector_dim(p0),coords);
 }
 
+pVector pudding_curve(pVector p0,int new_d,double pudding_number){
+    if(p0 == NULL){ printf(" - Error (pudding_curve)! p0 is NULL !\n"); return NULL; }
+    if(new_d <= p0->dim){ return p0;}
+    float coords[new_d];
+    for(int i=0; i<p0->dim; i++)
+        coords[i] = p0->coords[i];
+    for(int i=p0->dim; i< new_d; i++)
+        coords[i] = pudding_number;
+    return init_vector(p0->id,new_d,coords);
+}
+
+pVector filtering_curve(pVector p0){    // curves 2-d
+    if(p0 == NULL){printf("- Error (filtering_curve)! p0 is NULL \n"); return NULL;}
+    if(p0->dim%2 != 0){printf("- Error (filtering_curve)! p0->dim%%2 != 0 .\n"); return NULL;}
+    if(p0->dim < 6){ return vector_copy(p0);}
+    float coords[p0->dim];
+    int size = 2;
+    double point1[2] , point2[2];
+    int index_a = 0;
+    int index_b = 1;
+
+    coords[0] = p0->coords[0];    
+    coords[1] = p0->coords[1];
+    // printf("coords[%d] = %lf\n",0,coords[0]);
+    // printf("coords[%d] = %lf\n",1,coords[1]);
+    for(int index_c = 2; index_c <p0->dim/2; index_c+=1){
+        // printf("index_a %d\n",index_a);
+        // printf("index_b %d\n",index_b);
+        // printf("index_c %d\n",index_c);
+        if( norm_2(point_curve(p0,index_a,point1),point_curve(p0,index_b,point2)) < epsilon && \
+                norm_2(point_curve(p0,index_b,point1),point_curve(p0,index_c,point2)) < epsilon )
+        {
+            index_b = index_c;
+        }
+        else{
+            index_a = index_b;
+            coords[size] = p0->coords[index_b*2];
+            coords[size+1] = p0->coords[index_b*2+1];
+                // printf("coords[%d] = %lf\n",size,coords[size]);
+                // printf("coords[%d] = %lf\n",size+1,coords[size+1]);
+            size+=2;
+            index_b = index_c;
+        }
+
+        // printf("-------\n");
+    }
+    coords[size] = p0->coords[index_b*2];
+    coords[size+1] = p0->coords[index_b*2+1];
+    size+=2; 
+    return init_vector(p0->id,size,coords);
+}
 
 double get_larger_number_vector(){
     return larger_number;

@@ -3,11 +3,13 @@
 #include "hash.h"
 #include "HT.h"
 #include "loading.h"
+#include "lsh.h"
+#include "math_custom.h"
 #include "random.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/time.h>
+#include "timer.h"
 #include "vector.h"
 
 int detect_overflow_plus(double a, double b,double* result);
@@ -57,7 +59,7 @@ void cluster_get_conf(char* filename,int* K,int* L_lsh,int* k_lsh,int* k_cube,in
 
 }
 
-pList k_means_pp(pList pvl,int num_clusters){
+pList k_means_pp(pList pvl,int num_clusters, dist_type metric){
     // check for errors
     if( pvl == NULL){ printf("- Error (k_means_pp)! List of vectors is NULL\n"); return NULL;}
     else if( num_clusters <= 0){ printf("- Error (k_means_pp)! Number of clusters must be > 0\n"); return NULL;}
@@ -98,9 +100,10 @@ pList k_means_pp(pList pvl,int num_clusters){
             vector_next_init(pvl);
             int i=0;
             for(p0 = vector_next(pvl); p0 != NULL; p0 = vector_next(pvl)){
-                dist = dist_L2(p0,centroid);
-                if(distances[i] > dist)
-                    distances[i] = sqrt(dist);
+                dist = distance(metric,p0,centroid);
+                if(distances[i] > dist){
+                    distances[i] = dist;
+                }
                 sum += distances[i];
                 i++;
             }
@@ -125,11 +128,165 @@ pList k_means_pp(pList pvl,int num_clusters){
     return C_list;
 }
 
+int cluster_LSH_vector_method(pList pvl,pList centroids_list,int L,int k,int complete,char* output){
+    if(pvl == NULL || centroids_list == NULL){ printf("- Error! List of data or/and list of centroids are NULL !\n"); return 1;}
+    start_timer();     // start count the time !!
+
+    // make centroids table
+    pVector centroids[size_of_list(centroids_list)];
+    vector_next_init(centroids_list);
+    for(int i=0; i<size_of_list(centroids_list); i++){
+        pVector p0 = vector_next(centroids_list);
+        centroids[i] = p0;
+    }
+    double min_dist_centroids = INFINITY;
+    for(int i=0; i<size_of_list(centroids_list); i++){
+        for(int j=i+1; j< size_of_list(centroids_list); j++){
+            min_dist_centroids = min(sqrt(dist_L2(centroids[i],centroids[j])), min_dist_centroids);
+        }
+    }
+
+    // size of hash tables
+    long int table_size = size_of_list(pvl)/16 ;  // table_size = n/16
+
+    pLsh plsh0 = init_lsh(table_size,L,k,pvl);
+
+    double acceptable = size_of_list(pvl)*0.05;     // accept chenges upper 0.05 %
+    long int retrieved_items = 0;
+    double changes = acceptable+1;                  // for the frist loop
+    int round = 0;
+
+    // list of clusters
+    pList cluster_group[size_of_list(centroids_list)];
+    for(int i=0; i< size_of_list(centroids_list); i++)
+        cluster_group[i] = NULL;
+    
+    double R = min_dist_centroids/2.0 + 0.01;   // add 0.01 in case min_dist_centroids is 0
+
+    int max_times = 3;
+    while(changes > acceptable || max_times > 0){
+        max_times--;
+        printf("LSH_Vector round %d\n",round+1);
+        
+        init_loading("Range-search for each centroid : ",size_of_list(centroids_list));
+        for(long int i=0; i< size_of_list(centroids_list); i++){
+            cluster_group[i] =  lsh_clusters_range_search(centroids,i,plsh0,L,R,cluster_group[i]);
+            loading();
+        }
+        end_loading();
+
+        // changes
+        changes = (get_retrieved_items_lsh(plsh0) - retrieved_items)/size_of_list(pvl);
+        retrieved_items = get_retrieved_items_lsh(plsh0);
+
+        init_loading("Calculate new centroids progress : ",size_of_list(pvl));
+        for(long int i=0; i<size_of_list(centroids_list); i++){
+            centroids[i] = mean_vector(cluster_group[i],centroids[i]);
+            loading();
+        }
+        end_loading();
+        init_loading("'Clean' for each centroid the cluster's list : ",size_of_list(centroids_list));
+        for(long int i=0; i< size_of_list(centroids_list); i++){
+            delete_node_by_ClusterId(cluster_group[i],i);
+            loading();
+        }
+        end_loading();
+        round++;    // next round
+        R = 2*R;
+    }
+    printf("LSH made %d rounds !\n",round);
+    
+
+    double timer = stop_timer();
+
+    init_loading("Calculate with classic way progress : ",size_of_list(pvl));
+    vector_next_init(pvl);
+    for( pVector p0 = vector_next_cluster(pvl,-1); p0 != NULL; p0 = vector_next_cluster(pvl,-1)){
+        double dist = INFINITY;
+        double new_dist;
+        long int index=0;
+        for(long int i=0; i<size_of_list(centroids_list); i++){
+            new_dist = distance(L2,p0,centroids[i]);
+            if(dist > new_dist){
+                index = i;
+                dist = new_dist;
+            }
+        }
+        new_vector(cluster_group[index],p0,-1);
+        loading();
+    }
+    end_loading();
+
+    init_loading("Calculate new centroids progress : ",size_of_list(pvl));
+    for(long int i=0; i<size_of_list(centroids_list); i++){
+        centroids[i] = mean_vector(cluster_group[i],centroids[i]);
+        loading();
+    }
+    end_loading();
+
+    // write statistics in output
+    FILE* fp = fopen(output,"w");
+    fprintf(fp,"Algorithm: A3U1\n\n");
+    int i=0;
+    vector_next_init(centroids_list);
+    for(pVector p0 = vector_next(centroids_list); p0 != NULL; p0 = vector_next(centroids_list)){
+        fprintf(fp,"CLUSTER-%d  ",i+1);
+        fprintf(fp,"{size: %ld, centroid: ",sizeof(cluster_group[i]));
+        fprintf(fp,"[");
+        for(int j=0; j<dimensions_of_list(centroids_list)-1; j++)
+            fprintf(fp,"%lf, ",vector_coord(p0,j));
+        fprintf(fp,"%lf",vector_coord(p0,dimensions_of_list(centroids_list)-1));
+        fprintf(fp,"]}\n\n");
+        i++;
+    }
+    fprintf(fp,"clustering_time: %lf\n",timer);
+
+    double s_total = 0.0;
+    double s_centroid;
+    fprintf(fp,"Silhouette: [");
+    for(long int index = 0; index < size_of_list(centroids_list); index++){
+        s_centroid = 0.0;
+        double tmp;
+        vector_next_init(centroids_list);
+        int i=0;
+        for(pVector pi = vector_next(centroids_list); pi !=NULL ;  pi = vector_next(centroids_list)){
+            tmp = silhouette(cluster_group,pi,index,centroids_list,L2);
+            s_centroid += tmp;
+            i++;
+        }
+        s_total += s_centroid;
+        s_centroid = s_centroid/size_of_list(cluster_group[i]);
+        fprintf(fp,"%1.3lf, ",s_centroid);
+
+    }
+    s_total = s_total/size_of_list(pvl);
+    fprintf(fp,"%1.3lf]\n",s_total);
+
+    if(complete){
+        vector_next_init(centroids_list);
+        i = 0;
+        for(pVector p0 = vector_next(centroids_list); p0 != NULL; p0 = vector_next(centroids_list)){
+            fprintf(fp,"CLUSTER-%d {centroid",i+1);
+            vector_next_init(cluster_group[i]);
+            for(pVector p1 = vector_next(cluster_group[i]); p1 != NULL; p1= vector_next( cluster_group[i]))
+                fprintf(fp,", %s",vector_id(p1));
+            fprintf(fp,"}\n\n");
+            i++;
+        }
+
+    }
+    // free clusters
+    for(int i=0; i<size_of_list(centroids_list); i++)
+        delete_list_no_vectors(&cluster_group[i]);
+    // close file
+    fclose(fp);
+
+    return 0;
+}
+
 int cluster_Lloyd_method(pList pvl,pList centroids,int max_times,int complete,char* output,dist_type metric){
     if(pvl == NULL || centroids == NULL){ printf("- Error! List of data or/and list of centroids are NULL !\n"); return 1;}
-    struct timeval start, stop;
-
-    gettimeofday(&start, NULL);     // start count the time !!
+    start_timer();     // start count the time !!
 
     long int num_centroids = size_of_list(centroids);
     int num_dimensions = dimensions_of_list(centroids);
@@ -198,22 +355,25 @@ int cluster_Lloyd_method(pList pvl,pList centroids,int max_times,int complete,ch
         end_loading();
         round++;    // next round
     }
-    gettimeofday(&stop, NULL);      // stop count the time
-    double timer = (double)(stop.tv_usec - start.tv_usec) / 1000000 + (double)(stop.tv_sec - start.tv_sec);
+    double timer = stop_timer();
 
     // write statistics in output
     FILE* fp = fopen(output,"w");
-    fprintf(fp,"Algorithm: Lloyds\n\n");
+    fprintf(fp,"Algorithm: A1U");
+    if(metric == L2)
+        fprintf(fp,"1\n\n");
+    else
+        fprintf(fp,"2\n\n");
     int i=0;
     vector_next_init(centroids);
     for(pVector p0 = vector_next(centroids); p0 != NULL; p0 = vector_next(centroids)){
-        fprintf(fp,"CLUSTER-%d\n",i+1);
-        fprintf(fp,"- size %ld\n",num_items[i]);
+        fprintf(fp,"CLUSTER-%d ",i+1);
+        fprintf(fp,"{size: %ld, centroid: ",num_items[i]);
         fprintf(fp,"- [");
         for(int j=0; j<num_dimensions-1; j++)
             fprintf(fp,"%lf, ",vector_coord(p0,j));
         fprintf(fp,"%lf",vector_coord(p0,num_dimensions-1));
-        fprintf(fp,"]\n\n");
+        fprintf(fp,"]}\n\n");
         i++;
     }
     fprintf(fp,"clustering_time: %lf\n",timer);
@@ -243,7 +403,7 @@ int cluster_Lloyd_method(pList pvl,pList centroids,int max_times,int complete,ch
         vector_next_init(centroids);
         int i=0;
         for(pVector pi = vector_next(centroids); pi !=NULL ;  pi = vector_next(centroids)){
-            tmp = silhouette(cluster_group,pi,index,centroids);
+            tmp = silhouette(cluster_group,pi,index,centroids,metric);
             s_centroid += tmp;
             i++;
         }
@@ -278,6 +438,7 @@ int cluster_Lloyd_method(pList pvl,pList centroids,int max_times,int complete,ch
     return 0;
 }
 
+
 int detect_overflow_plus(double a, double b,double* result){
     if( a >= 0 && b>=0){
         *result = a+b;
@@ -304,13 +465,13 @@ int detect_overflow_plus(double a, double b,double* result){
     return 1;
 }
 
-int update_centroids_cluster(pVector* centroids,pList* cluster_list,long int size){
-    if(centroids == NULL || cluster_list == NULL || size < 1){
-        printf("Error (update_centroids_cluster)! centroids are NULL or cluster_list are NULL or size < 1 !\n");
+int update_centroids_cluster(pVector* centroids,pList* cluster_group,long int size){
+    if(centroids == NULL || cluster_group == NULL || size < 1){
+        printf("Error (update_centroids_cluster)! centroids are NULL or cluster_group are NULL or size < 1 !\n");
         return 1;
     }
     for(int i=0; i<size; i++){
-        assert(!update_centroid_vector(cluster_list[i],centroids[i],i));
+        assert(!update_centroid_vector(cluster_group[i],centroids[i],i));
     }
     return 0;
 }

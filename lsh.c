@@ -3,6 +3,7 @@
 #include "loading.h"
 #include "lsh.h"
 #include <math.h>
+#include "math_custom.h"
 #include "mod.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,7 +18,9 @@
 typedef struct lsh_obj{
     pHT* hash_tables;
     g** g_hash;
+    long int retrieved_items;
     int size;
+    long int data_size;
     int L;
 }lsh_obj;
 
@@ -27,7 +30,9 @@ pLsh init_lsh(int size,int L, int k, pList pvl){
     plsh0->hash_tables = malloc(sizeof(pHT)*L);
     plsh0->g_hash = malloc(sizeof(g*)*L);
     plsh0->size = size;
+    plsh0->data_size = size_of_list(pvl);
     plsh0->L = L;
+    plsh0->retrieved_items = 0;
 
     // initialize hash tables anf g hash functions
     for(int i=0; i<L; i++){
@@ -55,7 +60,9 @@ pLsh init_by_grids_lsh(int size,int L, int k,pGrid* grids, pList pvl, double pud
     plsh0->hash_tables = malloc(sizeof(pHT)*L);
     plsh0->g_hash = malloc(sizeof(g*)*L);
     plsh0->size = size;
+    plsh0->data_size = size_of_list(pvl);
     plsh0->L = L;
+    plsh0->retrieved_items = 0;
 
     // initialize hash tables anf g hash functions
     for(int i=0; i<L; i++){
@@ -112,6 +119,8 @@ int lsh(int k, int L, char* input_file ,char* output_file, char* query_file){
     double true_timer = 0;      // time for brute force search to complete
     double lsh_timer_average = 0;
     double true_timer_average = 0;
+    double MAF = 0.0;           // Maximum Approximation Factor
+    double MAF_tmp;
 
     // query_file_curr -> stores name of current query_file.
     char* query_file_curr = malloc(sizeof(char)*(strlen(query_file)+1) );
@@ -148,7 +157,8 @@ int lsh(int k, int L, char* input_file ,char* output_file, char* query_file){
                 true_timer_average += true_timer;
             
                 // write results for each query to output file
-                lsh_fprintf(output,nearest_neighbors,nearest_neighbors_brute,query_vector,lsh_timer,true_timer,L2);
+                lsh_fprintf(output,nearest_neighbors,nearest_neighbors_brute,query_vector,lsh_timer,true_timer,&MAF_tmp,L2);
+                MAF = max(MAF,MAF_tmp);
 
                 // delete lists of vectors for vector query_vector
                 delete_list_no_vectors(&nearest_neighbors);
@@ -163,6 +173,7 @@ int lsh(int k, int L, char* input_file ,char* output_file, char* query_file){
             true_timer_average = true_timer_average/size_of_list(queries);
             fprintf(output,"tApproximateAverage: %lf\n",lsh_timer_average);
             fprintf(output,"tTrueAverage: %lf\n",true_timer_average);
+            fprintf(output,"MAF: %lf\n",MAF);
         }
 
         // free queries list
@@ -190,11 +201,11 @@ int lsh_frechet(int k, int L, double delta,char* input_file ,char* output_file, 
     if(delta <= 0 ){ printf("Error ()! delta must be > 0\n"); return 1;}
 
     // List with all vectors
-    pList pvl = create_list_file(input_file,"Create Vector list from file progress : ");
+    pList pvl = create_list_curves_file(input_file,"Create Vector list from file progress : ");
     printf("List of vectors is ready !\n");
 
     double larger_coord = get_larger_number_vector();
-    double pudding_number = random_double(larger_coord, larger_coord+100.0);   // get pudding number between larger number of coordinate and +100
+    double pudding_number = random_double(larger_coord+100.0, larger_coord+1000.0);   // get pudding number between larger number of coordinate and +100
 
     // size of hash tables
     long int table_size = size_of_list(pvl)/16 ;  // table_size = n/16
@@ -212,6 +223,8 @@ int lsh_frechet(int k, int L, double delta,char* input_file ,char* output_file, 
     double true_timer = 0;      // time for brute force search to complete
     double lsh_timer_average = 0;
     double true_timer_average = 0;
+    double MAF = 0.0;           // Maximum Approximation Factor
+    double MAF_tmp;
 
     // query_file_curr -> stores name of current query_file.
 
@@ -221,7 +234,7 @@ int lsh_frechet(int k, int L, double delta,char* input_file ,char* output_file, 
     int check = 1;
     while(check){
         // Create Vector List with queries
-        pList queries = create_list_file(query_file_curr,"Create querie's list from file progress : ");
+        pList queries = create_list_curves_file(query_file_curr,"Create querie's list from file progress : ");
 
         // check if queries list has the same number of dimensions with input list
         if(dimensions_of_list(queries) != dimensions_of_list(pvl)){
@@ -249,7 +262,8 @@ int lsh_frechet(int k, int L, double delta,char* input_file ,char* output_file, 
                 true_timer_average += true_timer;
             
                 // write results for each query to output file
-                lsh_fprintf(output,nearest_neighbors,nearest_neighbors_brute,query_vector,lsh_timer,true_timer,metric);
+                lsh_fprintf(output,nearest_neighbors,nearest_neighbors_brute,query_vector,lsh_timer,true_timer,&MAF_tmp,metric);
+                MAF = max(MAF,MAF_tmp);
 
                 // delete lists of vectors for vector query_vector
                 delete_list_no_vectors(&nearest_neighbors);
@@ -264,6 +278,7 @@ int lsh_frechet(int k, int L, double delta,char* input_file ,char* output_file, 
             true_timer_average = true_timer_average/size_of_list(queries);
             fprintf(output,"tApproximateAverage: %lf\n",lsh_timer_average);
             fprintf(output,"tTrueAverage: %lf\n",true_timer_average);
+            fprintf(output,"MAF: %lf\n",MAF);
         }
 
         // free queries list
@@ -318,7 +333,9 @@ pList lsh_frechet_n_nearest(pLsh plsh0,pGrid* grids,pVector q,double pudding_num
     return best_N;
 }
 
-void lsh_fprintf(FILE* output,pList nn_list,pList nn_brute_list,pVector q,double lsh_timer,double true_timer,dist_type metric){
+void lsh_fprintf(FILE* output,pList nn_list,pList nn_brute_list,pVector q,\
+        double lsh_timer,double true_timer,double* appr_factor,dist_type metric)
+{
     if(output == NULL || nn_list == NULL || nn_brute_list == NULL || q == NULL){
         printf("- Error! output,nn_list, nn_brute_list or q are NULL !\n");
         return;
@@ -342,14 +359,12 @@ void lsh_fprintf(FILE* output,pList nn_list,pList nn_brute_list,pVector q,double
         fprintf(output,"Approximate Nearest neighbor: %s\n",vector_id(tmp1));
         fprintf(output,"True Nearest neighbor: %s\n",vector_id(tmp2));
         double dist1,dist2;
-        if( metric == L2){
-            dist1 = sqrt( dist_L2(q,tmp1));
-            dist2 = sqrt( dist_L2(q,tmp2));
-        }
-        else{
-            dist1 = distance(metric,q,tmp1);
-            dist2 = distance(metric,q,tmp2);
-        }
+        dist1 = distance(metric,q,tmp1);
+        dist2 = distance(metric,q,tmp2);
+        // for Maximium Approximation Factor
+        if(dist1 == dist2){    *appr_factor = 1;           }
+        else if( dist2 != 0.0){*appr_factor = dist1/dist2; }
+
         fprintf(output,"distanceApproximate: %lf\n",dist1);
         fprintf(output,"distanceTrue: %lf\n",dist2 );
         tmp1 = vector_next(nn_list);
@@ -363,18 +378,33 @@ void lsh_fprintf(FILE* output,pList nn_list,pList nn_brute_list,pVector q,double
     fprintf(output,"\n");
 }
 
-// pList lsh_clusters_range_search(pVector* centroids,long int centroid_id, pHT* hash_tables,g** g_hash,long int table_size,int L,double R){
-//     if(hash_tables == NULL || g_hash == NULL || centroids == NULL){ return NULL; }
-//     pList range_search_list = NULL;
-//     long int ID ,index;
-//     pList bucket;
-//     for(int l=0; l<L; l++){
-//         ID = hash_ID(g_hash[l],centroids);
-//         index = mod(ID,table_size);     // g(p) = ID(p) mod table_size
-//         bucket = HT_bucket(hash_tables[l],index);
-//         int num;
-//         // range_search_list = vector_range_search(bucket,range_search_list,q,INFINITY,R,&num);
-//         // range_search_list = vector_range_search_cluster(range_search_list,)
-//     }
-//     return range_search_list;
-// }
+pList lsh_clusters_range_search(pVector* centroids,long int centroid_id, pLsh plsh0,int L,double R,pList range_search_list){
+    if(plsh0 == NULL || centroids == NULL){ return NULL; }
+    long int ID ,index;
+    pList bucket;
+    for(int l=0; l<L; l++){
+        ID = hash_ID(plsh0->g_hash[l],centroids[centroid_id]);
+        index = mod(ID,plsh0->size);     // g(p) = ID(p) mod table_size
+        bucket = HT_bucket(plsh0->hash_tables[l],index);
+        long int num = 0;
+        range_search_list =  vector_range_search_cluster(bucket,range_search_list,centroids,-1,R,centroid_id,&num,L2);
+        plsh0->retrieved_items+= num;
+    }
+    return range_search_list;
+}
+
+long int get_retrieved_items_lsh(pLsh plsh0){
+    if(plsh0 == NULL){ return -1;}
+    return plsh0->retrieved_items;
+}
+
+void print_lsh(pLsh plsh0){
+    if(plsh0 == NULL){ printf("plsh0 is NULL\n");}
+    else{
+        printf(" LSH object \n----------------\n");
+        for(int i=0; i<plsh0->L; i++){
+            printf("---%d---\n",i);
+            fprint_HT_lite(plsh0->hash_tables[i],plsh0->data_size,stdout);
+        }
+    }
+}
