@@ -38,8 +38,6 @@ void print_point(double* p);
 
 int delete_point_curve(double** point);
 
-double dist_discrete_frechet(pVector p0, pVector p1);
-
 pVector snapping_curve(pVector p0,pVector t,double delta);     // snapping : floor((x-t)/delta + 1/2)*delta +t
 pVector remove_duplicates_curve(pVector p0,double padding_number);     // remove duplicates and add pudding number 
 

@@ -3,16 +3,18 @@
 #include <stdlib.h>
 #include "vector_list.h"
 #include "vector.h"
-#include "timer.h"
-#include "grid.h"
 
 // #define NAN
 
 int main(){
-    pGrid* grids = init_grids_table(10.0,10,2);
-    delete_grids_table(&grids);
+    pList pl = create_list_file("Datasets/test_set","Progress ");
+    pVector p0 = vector_next(pl);
 
-    // pGrid p = init_grid(10.0,2);
-    // delete_grid(&p);
+    pl = create_list_file("Datasets/test_set","Progress ");
+    pVector p1 = vector_next(pl);
+
+    double dist = dist_frechet(p0,p1);
+    printf("%lf\n",dist);
+
     return 0;
 }

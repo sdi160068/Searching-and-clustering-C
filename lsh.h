@@ -8,6 +8,8 @@ typedef struct lsh_obj * pLsh;
 
 pLsh init_lsh(int size,int L, int k, pList pvl);
 
+pLsh init_by_grids_lsh(int size,int L, int k,pGrid* grids, pList pvl, double pudding_number);
+
 int delete_lsh(pLsh * lsh_object);
 
 int delete_frechet_lsh(pLsh * plsh0);

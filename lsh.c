@@ -40,7 +40,6 @@ pLsh init_lsh(int size,int L, int k, pList pvl){
             long int index = hash_g(plsh0->g_hash[i],pv,size);
             new_HT_element(plsh0->hash_tables[i],pv,hash_ID(plsh0->g_hash[i],pv),index);
         }
-        pv = vector_next(pvl);
         loading();
     }
     end_loading();
@@ -50,7 +49,7 @@ pLsh init_lsh(int size,int L, int k, pList pvl){
     return plsh0;
 }
 
-pLsh init_by_grids_lsh(int size,int L, int k,pGrid* grids, pList pvl){
+pLsh init_by_grids_lsh(int size,int L, int k,pGrid* grids, pList pvl, double pudding_number){
     if(size < 0 || pvl == NULL || grids == NULL){ printf("Error (init_by_grids_lsh )! size < 0 or list == NULL or grids == NULL!\n"); return NULL;}
     pLsh plsh0 = malloc(sizeof(lsh_obj));
     plsh0->hash_tables = malloc(sizeof(pHT)*L);
@@ -64,9 +63,6 @@ pLsh init_by_grids_lsh(int size,int L, int k,pGrid* grids, pList pvl){
         plsh0->g_hash[i] = init_g(k,dimensions_of_list(pvl));
     }
 
-    // declare pudding number
-    double pudding_number = 10000000.0;
-
     // put vectors to hash tables
     pVector pv_key;
     for(pVector pv = vector_next(pvl); pv != NULL; pv =  vector_next(pvl)){
@@ -75,7 +71,6 @@ pLsh init_by_grids_lsh(int size,int L, int k,pGrid* grids, pList pvl){
             long int index = hash_g(plsh0->g_hash[i],pv_key,size);
             new_HT_frechet_element(plsh0->hash_tables[i],pv,pv_key,index);
         }
-        pv = vector_next(pvl);
         loading();
     }
     end_loading();
@@ -206,7 +201,7 @@ int lsh_frechet(int k, int L, double delta,char* input_file ,char* output_file, 
 
     pGrid* grids = init_grids_table(delta, L,2);
 
-    pLsh plsh0 = init_by_grids_lsh(table_size,L,k,grids,pvl);
+    pLsh plsh0 = init_by_grids_lsh(table_size,L,k,grids,pvl,pudding_number);
 
     // Open output_file for write
     FILE* output = fopen(output_file,"w");
@@ -346,8 +341,17 @@ void lsh_fprintf(FILE* output,pList nn_list,pList nn_brute_list,pVector q,double
     while( tmp1 != NULL && tmp2 != NULL){
         fprintf(output,"Approximate Nearest neighbor: %s\n",vector_id(tmp1));
         fprintf(output,"True Nearest neighbor: %s\n",vector_id(tmp2));
-        fprintf(output,"distanceApproximate: %lf\n",sqrt( distance(metric,q,tmp1) ) );
-        fprintf(output,"distanceTrue: %lf\n",sqrt( distance(metric,q,tmp2) ) );
+        double dist1,dist2;
+        if( metric == L2){
+            dist1 = sqrt( dist_L2(q,tmp1));
+            dist2 = sqrt( dist_L2(q,tmp2));
+        }
+        else{
+            dist1 = distance(metric,q,tmp1);
+            dist2 = distance(metric,q,tmp2);
+        }
+        fprintf(output,"distanceApproximate: %lf\n",dist1);
+        fprintf(output,"distanceTrue: %lf\n",dist2 );
         tmp1 = vector_next(nn_list);
         tmp2 = vector_next(nn_brute_list);
         neighbor_number++;

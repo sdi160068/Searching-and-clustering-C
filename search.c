@@ -109,15 +109,13 @@ int main(int argc, char* argv[]){
         }
     }
     else{printf(" - Error! You must give an algorithm\n"); check = 1;}
-    if(metric != NULL){
-        // check metric
-        if(algorithm_index == 'F'){
-            if(!strcmp(metric,"discrete"))       {  metric_bit = discrete_frechet;   }
-            else if(!strcmp(metric,"continuous")){  metric_bit = continuous_frechet; }
-            else{   printf(" - Error! Metric must be 'discrete' or 'continuous'\n"); check = 1; }
-        }
+    // check metric
+    if(algorithm_index == 'F'){
+        if(metric == NULL){ printf(" - Error! Metric must be 'discrete' or 'continuous'\n"); check = 1; }
+        if(!strcmp(metric,"discrete"))       {  metric_bit = discrete_frechet;   }
+        else if(!strcmp(metric,"continuous")){  metric_bit = continuous_frechet; }
+        else{   printf(" - Error! Metric must be 'discrete' or 'continuous'\n"); check = 1; }
     }
-    else{   printf(" - Error! Metric must be 'discrete' or 'continuous'\n"); check = 1; }
 
     if(check){ 
         free(input_file);

@@ -24,6 +24,7 @@ pVector init_vector_pData(pData p0){
     strcpy(pln->id,id);
     for(int i=1; i<data_getSize(p0); i++ ){
         pln->coords[i-1] = atof(data_getWord(p0,i));
+        larger_number = max(pln->coords[i-1],larger_number);
     }
     return pln;
 }

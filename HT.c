@@ -150,5 +150,5 @@ pList HT_bucket2(pHT p0,long int bucket_id){
         printf(" - Error! bucket_id %ld is < or >= of hash table size (%ld)\n",bucket_id,p0->size);
         return NULL;
     }
-    return p0->hTable[bucket_id];
+    return p0->hTable2[bucket_id];
 }
